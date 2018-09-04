@@ -2,6 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2018, Shadow Robot Company Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -36,22 +37,14 @@
 #define ETHERCAT_DEVICE_H
 
 #include <vector>
+#include <string>
+#include <eml/ethercat_defs.h>
+#include <eml/ethercat_slave_handler.h>
+#include <eml/ethercat_device_addressed_telegram.h>
+#include <eml/ethercat_logical_addressed_telegram.h>
+#include <eml/ethercat_frame.h>
 
-#include <ethercat/ethercat_defs.h>
-#include <al/ethercat_slave_handler.h>
-#include <dll/ethercat_device_addressed_telegram.h>
-#include <dll/ethercat_logical_addressed_telegram.h>
-#include <dll/ethercat_frame.h>
-
-#include <hardware_interface/hardware_interface.h>
-
-#include <diagnostic_updater/DiagnosticStatusWrapper.h>
-
-#include <diagnostic_msgs/DiagnosticArray.h>
-
-#include <ros_ethercat_hardware/ethercat_com.h>
-
-#include <pluginlib/class_list_macros.h>
+#include <ethercat_hardware/ethercat_com.h>
 
 using namespace std;
 
@@ -111,12 +104,6 @@ public:
   //
   void collect(EthercatCom *com, EtherCAT_SlaveHandler *sh);
 
-  // Puts previously diagnostic collected diagnostic state to DiagnosticStatus object
-  //
-  // d         DiagnositcState to add diagnostics to.
-  // numPorts  Number of ports device is supposed to have.  4 is max, 1 is min.
-  void publish(diagnostic_updater::DiagnosticStatusWrapper &d, unsigned numPorts = 4) const;
-
 protected:
   void zeroTotals();
   void accumulate(const et1x00_error_counters &next, const et1x00_error_counters &prev);
@@ -139,18 +126,13 @@ public:
   //!< Construct EtherCAT device
   virtual void construct(EtherCAT_SlaveHandler *sh, int &start_address);
 
-  //!< Construct non-EtherCAT device
-  virtual void construct(ros::NodeHandle &nh)
-  {
-  }
-
   EthercatDevice();
   virtual ~EthercatDevice()
   {
     delete sh_->get_fmmu_config();
     delete sh_->get_pd_config();
   }
-  virtual int initialize(hardware_interface::HardwareInterface *hw, bool allow_unprogrammed = true)
+  virtual int initialize(bool allow_unprogrammed = true)
   {
     return 0;
   }
@@ -165,30 +147,6 @@ public:
   {
     return true;
   }
-
-  /**
-   * \brief For EtherCAT devices that publish more than one EtherCAT Status message.
-   * If sub-class implements multiDiagnostics() then diagnostics() is not used.
-   * \param vec     Vector of diagnostics status messages. Slave appends one or more new diagnostic status'.
-   * \param buffer  Pointer to slave process data.\
-   */
-  virtual void multiDiagnostics(vector<diagnostic_msgs::DiagnosticStatus> &vec,
-                                unsigned char *buffer);
-
-  /**
-   * \brief For EtherCAT device that only publish one EtherCAT Status message.
-   * If sub-class implements multiDiagnostics() then diagnostics() is not used.
-   * \param d       Diagnostics status wrapper.
-   * \param buffer  Pointer to slave process data.
-   */
-  virtual void diagnostics(diagnostic_updater::DiagnosticStatusWrapper &d, unsigned char *buffer);
-
-  /**
-   * \brief Adds diagnostic information for EtherCAT ports.
-   * \param d       EtherCAT port diagnostics information will be appended.
-   * \param buffer  Number of communication ports slave has.
-   */
-  void ethercatDiagnostics(diagnostic_updater::DiagnosticStatusWrapper &d, unsigned numPorts);
 
   virtual void collectDiagnostics(EthercatCom *com);
   /**
@@ -257,9 +215,6 @@ public:
   pthread_mutex_t newDiagnosticsIndexLock_;
   EthercatDeviceDiagnostics deviceDiagnostics[2];
   pthread_mutex_t diagnosticsLock_;
-
-  // Keep diagnostics status as cache.  Avoids a lot of construction/destruction of status object.
-  diagnostic_updater::DiagnosticStatusWrapper diagnostic_status_;
 };
 
 #endif /* ETHERCAT_DEVICE_H */

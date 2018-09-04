@@ -2,6 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2018, Shadow Robot Company Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -33,10 +34,11 @@
  *********************************************************************/
 
 #include "ethercat_hardware/ethercat_device.h"
-
+#include "ethercat_hardware/log.h"
 #include <tinyxml.h>
 
 #include <iomanip>
+#include <unistd.h>
 
 bool et1x00_error_counters::isGreaterThan(unsigned value) const
 {
@@ -287,74 +289,6 @@ end:
   return;
 }
 
-void EthercatDeviceDiagnostics::publish(diagnostic_updater::DiagnosticStatusWrapper &d, unsigned numPorts) const
-{
-  if (numPorts > 4)
-  {
-    assert(numPorts < 4);
-    numPorts = 4;
-  }
-  assert(numPorts > 0);
-
-  d.addf("Reset detected", "%s", (resetDetected_ ? "Yes" : "No"));
-  d.addf("Valid", "%s", (diagnosticsValid_ ? "Yes" : "No"));
-
-  d.addf("EPU Errors", "%lld", epuErrorTotal_);
-  d.addf("PDI Errors", "%lld", pdiErrorTotal_);
-  ostringstream os, port;
-  for (unsigned i = 0; i < numPorts; ++i)
-  {
-    const EthercatPortDiagnostics & pt(portDiagnostics_[i]);
-    port.str("");
-    port << " Port " << i;
-    os.str("");
-    os << "Status" << port.str();
-    d.addf(os.str(), "%s Link, %s, %s Comm",
-           pt.hasLink ? "Has" : "No",
-           pt.isClosed ? "Closed" : "Open",
-           pt.hasCommunication ? "Has" : "No");
-    os.str("");
-    os << "RX Error" << port.str();
-    d.addf(os.str(), "%lld", pt.rxErrorTotal);
-    os.str("");
-    os << "Forwarded RX Error" << port.str();
-    d.addf(os.str(), "%lld", pt.forwardedRxErrorTotal);
-    os.str("");
-    os << "Invalid Frame" << port.str();
-    d.addf(os.str(), "%lld", pt.invalidFrameTotal);
-    os.str("");
-    os << "Lost Link" << port.str();
-    d.addf(os.str(), "%lld", pt.lostLinkTotal);
-  }
-
-  if (resetDetected_)
-  {
-    d.mergeSummaryf(d.ERROR, "Device reset likely");
-  }
-  else if (devicesRespondingToNodeAddress_ > 1)
-  {
-    d.mergeSummaryf(d.ERROR, "More than one device (%d) responded to node address", devicesRespondingToNodeAddress_);
-  }
-  else
-  {
-    if (diagnosticsFirst_)
-    {
-      d.mergeSummaryf(d.WARN, "Have not yet collected diagnostics");
-    }
-    else if (!diagnosticsValid_)
-    {
-      d.mergeSummaryf(d.WARN, "Could not collect diagnostics");
-    }
-    else
-    {
-      if (!portDiagnostics_[0].hasLink)
-      {
-        d.mergeSummaryf(d.WARN, "No link on port 0");
-      }
-    }
-  }
-}
-
 void EthercatDevice::construct(EtherCAT_SlaveHandler *sh, int &start_address)
 {
   sh_ = sh;
@@ -570,55 +504,4 @@ int EthercatDevice::writeData(EthercatCom *com, EtherCAT_SlaveHandler *sh, uint1
   }
 
   return 0;
-}
-
-void EthercatDevice::ethercatDiagnostics(diagnostic_updater::DiagnosticStatusWrapper &d, unsigned numPorts)
-{
-  if (numPorts > 4)
-  {
-    assert(numPorts < 4);
-    numPorts = 4;
-  }
-
-  // By locking index, diagnostics double-buffer cannot be swapped.
-  // Update thread is only allowed to change 'old' diagnostics buffer,
-  //  so new buffer data cannot be changed while index lock is held.
-  pthread_mutex_lock(&newDiagnosticsIndexLock_);
-
-  const EthercatDeviceDiagnostics &newDiag = deviceDiagnostics[newDiagnosticsIndex_];
-  newDiag.publish(d, numPorts);
-
-  pthread_mutex_unlock(&newDiagnosticsIndexLock_);
-}
-
-void EthercatDevice::diagnostics(diagnostic_updater::DiagnosticStatusWrapper &d, unsigned char *buffer)
-{
-  stringstream str;
-  str << "EtherCAT Device (" << std::setw(2) << std::setfill('0') << sh_->get_ring_position() << ")";
-  d.name = str.str();
-  str.str("");
-  str << sh_->get_product_code() << '-' << sh_->get_serial();
-  d.hardware_id = str.str();
-
-  d.message = "";
-  d.level = 0;
-
-  d.clear();
-  d.addf("Position", "%02d", sh_->get_ring_position());
-  d.addf("Product code", "%08x", sh_->get_product_code());
-  d.addf("Serial", "%08x", sh_->get_serial());
-  d.addf("Revision", "%08x", sh_->get_revision());
-
-  this->ethercatDiagnostics(d, 4); //assume unknown device has 4 ports
-}
-
-void EthercatDevice::multiDiagnostics(vector<diagnostic_msgs::DiagnosticStatus> &vec, unsigned char *buffer)
-{
-  // Clean up recycled status object before reusing it.
-  diagnostic_status_.clearSummary();
-  diagnostic_status_.clear();
-
-  // If child-class does not implement multiDiagnostics(), fall back to using slave's diagnostic() function
-  diagnostics(diagnostic_status_, buffer);
-  vec.push_back(diagnostic_status_);
 }

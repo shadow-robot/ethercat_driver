@@ -1,4 +1,5 @@
 #include "ethercat_hardware/ethernet_interface_info.h"
+#include "ethercat_hardware/log.h"
 #include <linux/ethtool.h>
 #include <linux/sockios.h>
 #include <net/if.h>

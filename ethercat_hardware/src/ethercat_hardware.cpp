@@ -2,6 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2018, Shadow Robot Company Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -33,13 +34,14 @@
  *********************************************************************/
 
 #include "ethercat_hardware/ethercat_hardware.h"
-
+#include "ethercat_hardware/log.h"
 #include <ethercat/ethercat_xenomai_drv.h>
 
 #include <sstream>
 
 #include <net/if.h>
 #include <sys/ioctl.h>
+#include <unistd.h>
 #include <boost/foreach.hpp>
 #include <boost/regex.hpp>
 
@@ -80,7 +82,6 @@ EthercatHardware::EthercatHardware(const std::string& name,
   halt_motors_(true),
   reset_state_(0),
   max_pd_retries_(10),
-  diagnostics_publisher_(node_),
   motor_publisher_(node_, "motors_halted", 1, true),
   device_loader_("ros_ethercat_hardware", "EthercatDevice"),
   allow_unprogrammed_(allow_unprogrammed),
@@ -95,7 +96,6 @@ EthercatHardware::EthercatHardware(const std::string& name,
 
 EthercatHardware::~EthercatHardware()
 {
-  diagnostics_publisher_.stop();
   for (uint32_t i = 0; i < slaves_.size(); ++i)
   {
     EC_FixedStationAddress fsa(i + 1);
@@ -182,7 +182,7 @@ std::vector<EtherCAT_SlaveHandler> EthercatHardware::scanPort(const std::string&
   struct netif *ni(NULL);
   if ((ni = init_ec(eth.c_str())) == NULL)
   {
-    ROS_FATAL_STREAM("Unable to initialize interface_: " << eth);
+    ROS_FATAL("Unable to initialize interface_: %s" << eth.c_str());
     return detected_devices;
   }
   EC_Logic logic_instance;
@@ -251,7 +251,7 @@ void EthercatHardware::init()
   // Initialize network interface
   if ((ni_ = init_ec(interface_.c_str())) == NULL)
   {
-    ROS_FATAL_STREAM("Unable to initialize interface_: " << interface_);
+    ROS_FATAL("Unable to initialize interface_: %s" << interface_.c_str());
     sleep(1);
     exit(EXIT_FAILURE);
   }
@@ -421,229 +421,7 @@ void EthercatHardware::init()
     max_pd_retries_ = max_pd_retries;
   }
 
-  diagnostics_publisher_.initialize(interface_, buffer_size_, slaves_, num_ethercat_devices_,
-                                    timeout_,
-                                    max_pd_retries_);
-
   node_.setParam("EtherCAT_Initialized", true);
-}
-
-EthercatHardwareDiagnosticsPublisher::EthercatHardwareDiagnosticsPublisher(ros::NodeHandle &node) :
-  node_(node),
-  diagnostics_ready_(false),
-  publisher_(node_.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1)),
-  diagnostics_buffer_(NULL),
-  last_dropped_packet_count_(0),
-  last_dropped_packet_time_(0)
-{
-}
-
-EthercatHardwareDiagnosticsPublisher::~EthercatHardwareDiagnosticsPublisher()
-{
-  delete[] diagnostics_buffer_;
-}
-
-void EthercatHardwareDiagnosticsPublisher::initialize(const string &interface, unsigned int buffer_size,
-                                                      const std::vector<boost::shared_ptr<EthercatDevice> > &slaves,
-                                                      unsigned int num_ethercat_devices,
-                                                      unsigned timeout,
-                                                      unsigned max_pd_retries)
-{
-  interface_ = interface;
-  buffer_size_ = buffer_size;
-  slaves_ = slaves;
-  num_ethercat_devices_ = num_ethercat_devices;
-  timeout_ = timeout;
-  max_pd_retries_ = max_pd_retries;
-
-  diagnostics_buffer_ = new unsigned char[buffer_size_];
-
-  // Initialize diagnostic data structures
-  diagnostic_array_.status.reserve(slaves_.size() + 1);
-  values_.reserve(10);
-
-  ethernet_interface_info_.initialize(interface);
-
-  diagnostics_thread_ = boost::thread(boost::bind(&EthercatHardwareDiagnosticsPublisher::diagnosticsThreadFunc, this));
-}
-
-void EthercatHardwareDiagnosticsPublisher::publish(const unsigned char *buffer,
-                                                   const EthercatHardwareDiagnostics &diagnostics)
-{
-  boost::try_to_lock_t try_lock;
-  boost::unique_lock<boost::mutex> lock(diagnostics_mutex_, try_lock);
-  if (lock.owns_lock())
-  {
-    // Make copies of diagnostic data for diagnostic thread
-    memcpy(diagnostics_buffer_, buffer, buffer_size_);
-    diagnostics_ = diagnostics;
-    // Trigger diagnostics publish thread
-    diagnostics_ready_ = true;
-    diagnostics_cond_.notify_one();
-  }
-}
-
-void EthercatHardwareDiagnosticsPublisher::stop()
-{
-  diagnostics_thread_.interrupt();
-  diagnostics_thread_.join();
-  publisher_.shutdown();
-}
-
-void EthercatHardwareDiagnosticsPublisher::diagnosticsThreadFunc()
-{
-  try
-  {
-    while (1)
-    {
-      boost::unique_lock<boost::mutex> lock(diagnostics_mutex_);
-      while (!diagnostics_ready_)
-      {
-        diagnostics_cond_.wait(lock);
-      }
-      diagnostics_ready_ = false;
-      publishDiagnostics();
-    }
-  }
-  catch (boost::thread_interrupted const&)
-  {
-    return;
-  }
-}
-
-void EthercatHardwareDiagnosticsPublisher::timingInformation(diagnostic_updater::DiagnosticStatusWrapper &status,
-                                                             const string &key,
-                                                             const accumulator_set<double, stats<tag::max, tag::mean> > &acc,
-                                                             double max)
-{
-  status.addf(key + " Avg (us)", "%5.4f", extract_result<tag::mean>(acc) * 1e6); // Average over last 1 second
-  status.addf(key + " 1 Sec Max (us)", "%5.4f", extract_result<tag::max>(acc) * 1e6); // Max over last 1 second
-  status.addf(key + " Max (us)", "%5.4f", max * 1e6); // Max since start
-}
-
-void EthercatHardwareDiagnosticsPublisher::publishDiagnostics()
-{
-  ros::Time now(ros::Time::now());
-
-  // Publish status of EtherCAT master
-  status_.clearSummary();
-  status_.clear();
-
-  status_.name = "EtherCAT Master";
-//  if (diagnostics_.motors_halted_)
-//  {
-//    std::ostringstream desc;
-//    desc << "Motors halted";
-//    if (diagnostics_.halt_after_reset_)
-//    {
-//      desc << " soon after reset";
-//    }
-//    desc << " (" << diagnostics_.motors_halted_reason_ << ")";
-//    status_.summary(status_.ERROR, desc.str());
-//  }
-//  else
-//  {
-  status_.summary(status_.OK, "OK");
-//  }
-
-  if (diagnostics_.pd_error_)
-  {
-    status_.mergeSummary(status_.ERROR, "Error sending proccess data");
-  }
-
-  //status_.add("Motors halted", diagnostics_.motors_halted_ ? "true" : "false");
-  status_.addf("EtherCAT devices (expected)", "%d", num_ethercat_devices_);
-  status_.addf("EtherCAT devices (current)", "%d", diagnostics_.device_count_);
-  ethernet_interface_info_.publishDiagnostics(status_);
-  //status_.addf("Reset state", "%d", reset_state_);
-
-  status_.addf("Timeout (us)", "%d", timeout_);
-  status_.addf("Max PD Retries", "%d", max_pd_retries_);
-
-  // Produce warning if number of devices changed after device initialization
-  if (num_ethercat_devices_ != diagnostics_.device_count_)
-  {
-    status_.mergeSummary(status_.WARN, "Number of EtherCAT devices changed");
-  }
-
-  timingInformation(status_, "Roundtrip time", diagnostics_.txandrx_acc_,
-                    diagnostics_.max_txandrx_);
-  if (diagnostics_.collect_extra_timing_)
-  {
-    timingInformation(status_, "Pack command time", diagnostics_.pack_command_acc_,
-                      diagnostics_.max_pack_command_);
-    timingInformation(status_, "Unpack state time", diagnostics_.unpack_state_acc_,
-                      diagnostics_.max_unpack_state_);
-    timingInformation(status_, "Publish time", diagnostics_.publish_acc_,
-                      diagnostics_.max_publish_);
-  }
-
-  status_.addf("EtherCAT Process Data txandrx errors", "%d", diagnostics_.txandrx_errors_);
-
-  status_.addf("Reset motors service count", "%d", diagnostics_.reset_motors_service_count_);
-  status_.addf("Halt motors service count", "%d", diagnostics_.halt_motors_service_count_);
-  status_.addf("Halt motors error count", "%d", diagnostics_.halt_motors_error_count_);
-
-  { // Publish ethercat network interface counters
-    const struct netif_counters *c = &diagnostics_.counters_;
-    status_.add("Input Thread", (diagnostics_.input_thread_is_stopped_ ? "Stopped" : "Running"));
-    status_.addf("Sent Packets", "%llu", (unsigned long long) c->sent);
-    status_.addf("Received Packets", "%llu", (unsigned long long) c->received);
-    status_.addf("Collected Packets", "%llu", (unsigned long long) c->collected);
-    status_.addf("Dropped Packets", "%llu", (unsigned long long) c->dropped);
-    status_.addf("TX Errors", "%llu", (unsigned long long) c->tx_error);
-    status_.addf("TX Network Down", "%llu", (unsigned long long) c->tx_net_down);
-    status_.addf("TX Would Block", "%llu", (unsigned long long) c->tx_would_block);
-    status_.addf("TX No Buffers", "%llu", (unsigned long long) c->tx_no_bufs);
-    status_.addf("TX Queue Full", "%llu", (unsigned long long) c->tx_full);
-    status_.addf("RX Runt Packet", "%llu", (unsigned long long) c->rx_runt_pkt);
-    status_.addf("RX Not EtherCAT", "%llu", (unsigned long long) c->rx_not_ecat);
-    status_.addf("RX Other EML", "%llu", (unsigned long long) c->rx_other_eml);
-    status_.addf("RX Bad Index", "%llu", (unsigned long long) c->rx_bad_index);
-    status_.addf("RX Bad Sequence", "%llu", (unsigned long long) c->rx_bad_seqnum);
-    status_.addf("RX Duplicate Sequence", "%llu", (unsigned long long) c->rx_dup_seqnum);
-    status_.addf("RX Duplicate Packet", "%llu", (unsigned long long) c->rx_dup_pkt);
-    status_.addf("RX Bad Order", "%llu", (unsigned long long) c->rx_bad_order);
-    status_.addf("RX Late Packet", "%llu", (unsigned long long) c->rx_late_pkt);
-    status_.addf("RX Late Packet RTT", "%llu", (unsigned long long) c->rx_late_pkt_rtt_us);
-
-    double rx_late_pkt_rtt_us_avg = 0.0;
-    if (c->rx_late_pkt > 0)
-    {
-      rx_late_pkt_rtt_us_avg = ((double) c->rx_late_pkt_rtt_us_sum) / ((double) c->rx_late_pkt);
-    }
-    status_.addf("RX Late Packet Avg RTT", "%f", rx_late_pkt_rtt_us_avg);
-
-    // Check for newly dropped packets
-    if (c->dropped > last_dropped_packet_count_)
-    {
-      last_dropped_packet_time_ = now;
-      last_dropped_packet_count_ = c->dropped;
-    }
-  }
-
-  // Create error message if packet has been dropped recently
-  if ((last_dropped_packet_count_ > 0)
-      && ((now - last_dropped_packet_time_).toSec() < dropped_packet_warning_hold_time_))
-  {
-    status_.mergeSummaryf(status_.WARN, "Dropped packets in last %d seconds",
-                          dropped_packet_warning_hold_time_);
-  }
-
-  diagnostic_array_.status.clear();
-  diagnostic_array_.status.push_back(status_);
-
-  // Also, collect diagnostic statuses of all EtherCAT device
-  unsigned char *current = diagnostics_buffer_;
-  for (unsigned int s = 0; s < slaves_.size(); ++s)
-  {
-    slaves_[s]->multiDiagnostics(diagnostic_array_.status, current);
-    current += slaves_[s]->command_size_ + slaves_[s]->status_size_;
-  }
-
-  // Publish status of each EtherCAT device
-  diagnostic_array_.header.stamp = ros::Time::now();
-  publisher_.publish(diagnostic_array_);
 }
 
 void EthercatHardware::update(bool reset, bool halt)
@@ -786,27 +564,24 @@ void EthercatHardware::updateAccMax(double &max,
 
 void EthercatHardware::publishDiagnostics()
 {
-  // Update max timing values
-  updateAccMax(diagnostics_.max_pack_command_, diagnostics_.pack_command_acc_);
-  updateAccMax(diagnostics_.max_txandrx_, diagnostics_.txandrx_acc_);
-  updateAccMax(diagnostics_.max_unpack_state_, diagnostics_.unpack_state_acc_);
-  updateAccMax(diagnostics_.max_publish_, diagnostics_.publish_acc_);
+  // // Update max timing values
+  // updateAccMax(diagnostics_.max_pack_command_, diagnostics_.pack_command_acc_);
+  // updateAccMax(diagnostics_.max_txandrx_, diagnostics_.txandrx_acc_);
+  // updateAccMax(diagnostics_.max_unpack_state_, diagnostics_.unpack_state_acc_);
+  // updateAccMax(diagnostics_.max_publish_, diagnostics_.publish_acc_);
 
-  // Grab stats and counters from input thread
-  diagnostics_.counters_ = ni_->counters;
-  diagnostics_.input_thread_is_stopped_ = bool(ni_->is_stopped);
+  // // Grab stats and counters from input thread
+  // diagnostics_.counters_ = ni_->counters;
+  // diagnostics_.input_thread_is_stopped_ = bool(ni_->is_stopped);
 
-  diagnostics_.motors_halted_ = halt_motors_;
+  // diagnostics_.motors_halted_ = halt_motors_;
 
-  // Pass diagnostic data to publisher thread
-  diagnostics_publisher_.publish(this_buffer_, diagnostics_);
-
-  // Clear statistics accumulators
-  static accumulator_set<double, stats<tag::max, tag::mean> > blank;
-  diagnostics_.pack_command_acc_ = blank;
-  diagnostics_.txandrx_acc_ = blank;
-  diagnostics_.unpack_state_acc_ = blank;
-  diagnostics_.publish_acc_ = blank;
+  // // Clear statistics accumulators
+  // static accumulator_set<double, stats<tag::max, tag::mean> > blank;
+  // diagnostics_.pack_command_acc_ = blank;
+  // diagnostics_.txandrx_acc_ = blank;
+  // diagnostics_.unpack_state_acc_ = blank;
+  // diagnostics_.publish_acc_ = blank;
 }
 
 boost::shared_ptr<EthercatDevice>
@@ -1044,7 +819,7 @@ void EthercatHardware::collectDiagnostics()
                          length, // Data Length,
                          p); // Buffer to put read result into
 
-    // Put read telegram in ros_ethercat_eml/ethernet frame
+    // Put read telegram in ethercat_eml/ethernet frame
     EC_Ethernet_Frame frame(&status);
     oob_com_->txandrx(&frame);
 

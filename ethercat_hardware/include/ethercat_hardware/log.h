@@ -1,7 +1,7 @@
 /*********************************************************************
  * Software License Agreement (BSD License)
  *
- *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2018, Shadow Robot Company Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -32,70 +32,25 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-#ifndef ETHERCAT_COM_H
-#define ETHERCAT_COM_H
 
-#include <eml/ethercat_AL.h>
-#include <eml/ethercat_master.h>
-#include <eml/ethercat_slave_handler.h>
-#include <eml/ethercat_dll.h>
-#include <pthread.h>
+#ifndef __ROS_H__
+#define __ROS_H__
 
-class EthercatCom
-{
-protected:
-  EthercatCom()
-  {
-  }
+#include <stdio.h>
 
-public:
-  virtual bool txandrx(struct EtherCAT_Frame * frame) = 0;
-  virtual bool txandrx_once(struct EtherCAT_Frame * frame) = 0;
-  virtual ~EthercatCom()
-  {
-  }
-};
+#define LOG_INFO      3
+#define LOG_WARNING   2
+#define LOG_ERROR     1
+#define LOG_FATAL     0
+#define LOG_LEVEL     3
 
-class EthercatDirectCom : public EthercatCom
-{
-public:
-  EthercatDirectCom(EtherCAT_DataLinkLayer *dll) : dll_(dll)
-  {
-  }
+#define ROS_INFO(...) \
+  if (LOG_LEVEL <= LOG_INFO) fprintf(stderr, __VA_ARGS__)
+#define ROS_WARN(...) \
+  if (LOG_LEVEL <= LOG_WARNING) fprintf(stderr, __VA_ARGS__)
+#define ROS_ERROR(...) \
+  if (LOG_LEVEL <= LOG_ERROR) fprintf(stderr, __VA_ARGS__)
+#define ROS_FATAL(...) \
+  if (LOG_LEVEL <= LOG_FATAL) fprintf(stderr, __VA_ARGS__)
 
-  bool txandrx(struct EtherCAT_Frame * frame);
-  bool txandrx_once(struct EtherCAT_Frame * frame);
-
-protected:
-  EtherCAT_DataLinkLayer *dll_;
-};
-
-class EthercatOobCom : public EthercatCom
-{
-public:
-  EthercatOobCom(struct netif *ni);
-
-  bool txandrx(struct EtherCAT_Frame * frame);
-  bool txandrx_once(struct EtherCAT_Frame * frame);
-
-  void tx();
-protected:
-  bool lock(unsigned line);
-  bool trylock(unsigned line);
-  bool unlock(unsigned line);
-
-  struct netif *ni_;
-  pthread_mutex_t mutex_;
-  pthread_cond_t share_cond_;
-  pthread_cond_t busy_cond_;
-
-  enum
-  {
-    IDLE = 0, READY_TO_SEND = 1, WAITING_TO_RECV = 2
-  } state_;
-  EtherCAT_Frame *frame_;
-  int handle_;
-  unsigned line_;
-};
-
-#endif /* ETHERCAT_COM_H */
+#endif // __ROS_H__

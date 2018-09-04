@@ -2,6 +2,7 @@
  * Software License Agreement (BSD License)
  *
  *  Copyright (c) 2008, Willow Garage, Inc.
+ *  Copyright (c) 2018, Shadow Robot Company Ltd.
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -37,11 +38,11 @@
 
 #include <hardware_interface/hardware_interface.h>
 
-#include <al/ethercat_AL.h>
-#include <al/ethercat_master.h>
-#include <al/ethercat_slave_handler.h>
-#include <dll/ethercat_dll.h>
-#include <dll/ethercat_device_addressed_telegram.h>
+#include <eml/ethercat_AL.h>
+#include <eml/ethercat_master.h>
+#include <eml/ethercat_slave_handler.h>
+#include <eml/ethercat_dll.h>
+#include <eml/ethercat_device_addressed_telegram.h>
 
 #include "ethercat_hardware/ethercat_device.h"
 #include "ethercat_hardware/ethercat_com.h"
@@ -91,112 +92,6 @@ struct EthercatHardwareDiagnostics
   const char* motors_halted_reason_; //!< reason that motors first halted
 
   static const bool collect_extra_timing_ = true;
-};
-
-/*!
- * \brief Publishes EthercatHardware diagnostics.
- *
- * All the string formating used for creating diagnostics is too
- * slow to be run in the realtime thread. Instead, a copy of the raw
- * diagnostics data is made and a separate thread does the string conversion
- * and publishing.
- * Previously, the diagnostics data used by publishing thread was contained
- * in the EthercatHardware class.  However, this allowed the publishing thread
- * access to other non thread-safe data.
- * This class keeps the diagnostics data used by the publish thread explicitly
- * separate.
- */
-class EthercatHardwareDiagnosticsPublisher
-{
-public:
-
-  EthercatHardwareDiagnosticsPublisher(ros::NodeHandle &node);
-  ~EthercatHardwareDiagnosticsPublisher();
-
-  /*!
-   * \brief Initializes hardware publish.
-   * \param buffer_size size of process data buffer
-   * \param number of EtherCAT slave devices
-   */
-  void initialize(const string &interface, unsigned int buffer_size,
-                  const std::vector<boost::shared_ptr<EthercatDevice> > &slaves,
-                  unsigned int num_ethercat_devices_,
-                  unsigned timeout,
-                  unsigned max_pd_retries);
-
-  /*!
-   * \brief Triggers publishing of new diagnostics data
-   *
-   * Makes copy of diagnostics data and triggers internal thread to
-   * started conversion and publish of data.
-   * This function will not block.
-   */
-  void publish(const unsigned char *buffer, const EthercatHardwareDiagnostics &diagnostics);
-
-  /*!
-   * \brief Stops publishing thread.  May block.
-   */
-  void stop();
-
-private:
-
-  /*!
-   * \brief Publishes diagnostics
-   *
-   * Takes internally saved diagnostics data and converts to a ROS
-   * diagnostics status message.
-   * This function performs a lot of string formatting, so it is slow.
-   */
-  void publishDiagnostics();
-
-  /*!
-   * \brief Publishing thread main loop
-   *
-   * Waits for condition variable to start publishing internal data.
-   */
-  void diagnosticsThreadFunc();
-
-  /*!
-   * \brief Helper function for converting timing for diagnostics
-   */
-  static void timingInformation(diagnostic_updater::DiagnosticStatusWrapper &status,
-                                const string &key,
-                                const accumulator_set<double, stats<tag::max, tag::mean> > &acc,
-                                double max);
-
-  ros::NodeHandle node_;
-
-  boost::mutex diagnostics_mutex_; //!< mutex protects all class data and cond variable
-  boost::condition_variable diagnostics_cond_;
-  bool diagnostics_ready_;
-  boost::thread diagnostics_thread_;
-
-  ros::Publisher publisher_;
-
-  EthercatHardwareDiagnostics diagnostics_; //!< Diagnostics information use by publish function
-  unsigned char *diagnostics_buffer_;
-  unsigned int buffer_size_;
-  std::vector<boost::shared_ptr<EthercatDevice> > slaves_;
-  unsigned int num_ethercat_devices_;
-  string interface_;
-
-  //! Timeout controls how long EtherCAT driver waits for packet before declaring it as dropped.
-  unsigned timeout_;
-  //! Number of times (in a row) to retry sending process data (realtime data) before halting motors
-  unsigned max_pd_retries_;
-
-  //! Count of dropped packets last diagnostics cycle
-  uint64_t last_dropped_packet_count_;
-  //! Time last packet was dropped 0 otherwise.  Used for warning about dropped packets.
-  ros::Time last_dropped_packet_time_;
-  //! Number of seconds since late dropped packet to keep warning
-  static const unsigned dropped_packet_warning_hold_time_ = 10; //keep warning up for 10 seconds
-
-  diagnostic_msgs::DiagnosticArray diagnostic_array_;
-  //! Information about Ethernet interface used for EtherCAT communication
-  EthernetInterfaceInfo ethernet_interface_info_;
-  vector<diagnostic_msgs::KeyValue> values_;
-  diagnostic_updater::DiagnosticStatusWrapper status_;
 };
 
 class EthercatHardware
