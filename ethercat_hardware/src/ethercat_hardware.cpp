@@ -35,10 +35,10 @@
 
 #include "ethercat_hardware/ethercat_hardware.h"
 #include "ethercat_hardware/log.h"
-#include <ethercat/ethercat_xenomai_drv.h>
+#include <eml/ethercat_xenomai_drv.h>
 
 #include <sstream>
-
+#include <time.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
@@ -68,11 +68,8 @@ void EthercatHardwareDiagnostics::resetMaxTiming()
 }
 
 EthercatHardware::EthercatHardware(const std::string& name,
-                                   hardware_interface::HardwareInterface *hw,
                                    const std::string& eth,
                                    bool allow_unprogrammed) :
-  hw_(hw),
-  node_(ros::NodeHandle(name)),
   ni_(NULL),
   interface_(eth),
   pd_buffer_(&m_logic_instance_, &m_dll_instance_),
@@ -82,12 +79,9 @@ EthercatHardware::EthercatHardware(const std::string& name,
   halt_motors_(true),
   reset_state_(0),
   max_pd_retries_(10),
-  motor_publisher_(node_, "motors_halted", 1, true),
-  device_loader_("ros_ethercat_hardware", "EthercatDevice"),
   allow_unprogrammed_(allow_unprogrammed),
   start_address_(0x00010000)
 {
-  node_.setParam("EtherCAT_Initialized", false);
   if (!interface_.empty())
     init();
   else
@@ -108,7 +102,6 @@ EthercatHardware::~EthercatHardware()
     close_socket(ni_);
   }
   delete[] buffers_;
-  motor_publisher_.stop();
   delete oob_com_;
   delete ethercat_master_;
   delete m_router_;
@@ -182,7 +175,7 @@ std::vector<EtherCAT_SlaveHandler> EthercatHardware::scanPort(const std::string&
   struct netif *ni(NULL);
   if ((ni = init_ec(eth.c_str())) == NULL)
   {
-    ROS_FATAL("Unable to initialize interface_: %s" << eth.c_str());
+    ROS_FATAL("Unable to initialize interface_: %s", eth.c_str());
     return detected_devices;
   }
   EC_Logic logic_instance;
@@ -251,7 +244,7 @@ void EthercatHardware::init()
   // Initialize network interface
   if ((ni_ = init_ec(interface_.c_str())) == NULL)
   {
-    ROS_FATAL("Unable to initialize interface_: %s" << interface_.c_str());
+    ROS_FATAL("Unable to initialize interface_: %s", interface_.c_str());
     sleep(1);
     exit(EXIT_FAILURE);
   }

@@ -36,8 +36,6 @@
 #ifndef ETHERCAT_HARDWARE_H
 #define ETHERCAT_HARDWARE_H
 
-#include <hardware_interface/hardware_interface.h>
-
 #include <eml/ethercat_AL.h>
 #include <eml/ethercat_master.h>
 #include <eml/ethercat_slave_handler.h>
@@ -48,8 +46,6 @@
 #include "ethercat_hardware/ethercat_com.h"
 #include "ethercat_hardware/ethernet_interface_info.h"
 
-#include <realtime_tools/realtime_publisher.h>
-
 #include <boost/accumulators/accumulators.hpp>
 #include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/max.hpp>
@@ -58,10 +54,6 @@
 #include <boost/thread/thread.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-
-#include <pluginlib/class_loader.h>
-
-#include <std_msgs/Bool.h>
 
 #include <boost/regex.hpp>
 
@@ -107,8 +99,7 @@ public:
   /*!
    * \brief Constructor
    */
-  EthercatHardware(const std::string& name, hardware_interface::HardwareInterface *hw,
-                   const string &eth, bool allow_unprogrammed);
+  EthercatHardware(const std::string& name, const string &eth, bool allow_unprogrammed);
 
   /*!
    * \brief Destructor
@@ -150,8 +141,6 @@ public:
    */
   bool publishTrace(int position, const string &reason, unsigned level, unsigned delay);
 
-  hardware_interface::HardwareInterface *hw_;
-
   const std::vector<boost::shared_ptr<const EthercatDevice> > getSlaves() const
   {
     return std::vector<boost::shared_ptr<const EthercatDevice> >(slaves_.begin(), slaves_.end());
@@ -170,8 +159,6 @@ private:
   static void updateAccMax(double &max, const accumulator_set<double, stats<tag::max, tag::mean> > &acc);
   boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
   bool setRouterToSlaveHandlers();
-
-  ros::NodeHandle node_;
 
   struct netif *ni_;
 
@@ -199,15 +186,10 @@ private:
   unsigned max_pd_retries_; //!< Max number of times to retry sending process data before halting motors
 
   EthercatHardwareDiagnostics diagnostics_;
-  EthercatHardwareDiagnosticsPublisher diagnostics_publisher_;
-  ros::Time last_published_;
-  ros::Time last_reset_;
-
-  realtime_tools::RealtimePublisher<std_msgs::Bool> motor_publisher_;
+  struct timespec last_published_;
+  struct timespec last_reset_;
 
   EthercatOobCom *oob_com_;
-
-  pluginlib::ClassLoader<EthercatDevice> device_loader_;
 
   bool allow_unprogrammed_; //!< if the driver should treat the discovery of unprogrammed boards as a fatal error. Set to 'true' during board configuration, and set to 'false' otherwise.
 

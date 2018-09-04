@@ -38,8 +38,6 @@
 #include <string>
 #include <stdint.h>
 
-#include <diagnostic_updater/DiagnosticStatusWrapper.h>
-
 struct EthtoolStats
 {
   EthtoolStats();
@@ -67,13 +65,6 @@ public:
   EthernetInterfaceInfo();
   void initialize(const std::string &interface);
   ~EthernetInterfaceInfo();
-
-  /**
-   * \brief Collect and append ethernet interface diagnostics
-   *
-   * \param d       Diagnostics status wrapper.
-   */
-  void publishDiagnostics(diagnostic_updater::DiagnosticStatusWrapper &d);
 
 protected:
   //! Get ethtool stats from interface

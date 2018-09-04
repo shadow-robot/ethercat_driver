@@ -5,6 +5,8 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#include <string.h>
+#include <unistd.h>
 
 EthtoolStats::EthtoolStats() :
   rx_errors_(0),
@@ -193,62 +195,4 @@ bool EthernetInterfaceInfo::getEthtoolStats(EthtoolStats &s)
   }
 
   return true;
-}
-
-void EthernetInterfaceInfo::publishDiagnostics(diagnostic_updater::DiagnosticStatusWrapper &d)
-{
-  d.add("Interface", interface_);
-
-  // TODO : collect and publish information on whether interface is up/running
-  InterfaceState state;
-  if (getInterfaceState(state))
-  {
-    if (!state.running_ && last_state_.running_)
-    {
-      ++lost_link_count_;
-    }
-
-    if (state.up_ && !state.running_)
-    {
-      d.mergeSummary(d.ERROR, "No link");
-    }
-    else if (!state.up_)
-    {
-      d.mergeSummary(d.ERROR, "Interface down");
-    }
-
-    d.addf("Interface State", "%s UP, %s RUNNING", state.up_ ? "" : "NOT",
-           state.running_ ? "" : "NOT");
-    last_state_ = state;
-  }
-  else
-  {
-    d.add("Iface State", "ERROR");
-  }
-  d.add("Lost Links", lost_link_count_);
-
-  EthtoolStats stats;
-  bool have_stats = getEthtoolStats(stats);
-  stats -= orig_stats_; //subtract off orignal counter values
-
-  if (have_stats && (rx_error_index_ >= 0))
-    d.addf("RX Errors", "%llu", stats.rx_errors_);
-  else
-    d.add("RX Errors", "N/A");
-
-  if (have_stats && (rx_crc_error_index_ >= 0))
-    d.addf("RX CRC Errors", "%llu", stats.rx_crc_errors_);
-  else
-    d.add("RX CRC Errors", "N/A");
-
-  if (have_stats && (rx_frame_error_index_ >= 0))
-    d.addf("RX Frame Errors", "%llu", stats.rx_frame_errors_);
-  else
-    d.add("RX Frame Errors", "N/A");
-
-  if (have_stats && (rx_align_error_index_ >= 0))
-    d.addf("RX Align Errors", "%llu", stats.rx_align_errors_);
-  else
-    d.add("RX Align Errors", "N/A");
-
 }
