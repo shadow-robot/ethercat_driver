@@ -296,9 +296,6 @@ void EthercatHardware::init()
     buffer_size_ += slaves_[slave]->command_size_ + slaves_[slave]->status_size_;
   }
 
-  // Configure any non-ethercat slaves (appends devices to slaves_ vector)
-  loadNonEthercatDevices();
-
   // Move slave from INIT to PREOP
 
   BOOST_FOREACH(EtherCAT_SlaveHandler *sh, slave_handles)
@@ -687,114 +684,6 @@ EthercatHardware::configSlave(EtherCAT_SlaveHandler *sh)
   return p;
 }
 
-boost::shared_ptr<EthercatDevice>
-EthercatHardware::configNonEthercatDevice(const std::string &name, const std::string &type)
-{
-  boost::shared_ptr<EthercatDevice> p;
-  try
-  {
-    p = device_loader_.createInstance(type);
-  }
-  catch (pluginlib::LibraryLoadException &e)
-  {
-    p.reset();
-    ROS_FATAL("Unable to load plugin for non-EtherCAT device '%s' with type: %s : %s",
-              name.c_str(), type.c_str(), e.what());
-  }
-  if (p)
-  {
-    ROS_INFO("Creating non-EtherCAT device '%s' of type '%s'", name.c_str(), type.c_str());
-    ros::NodeHandle nh(node_, "non_ethercat_devices/" + name);
-    p->construct(nh);
-  }
-  return p;
-}
-
-// Do this to get access to Struct (std::map) element of XmlRpcValue
-
-class MyXmlRpcValue : public XmlRpc::XmlRpcValue
-{
-public:
-
-  MyXmlRpcValue(XmlRpc::XmlRpcValue &value) :
-    XmlRpc::XmlRpcValue(value)
-  {
-  }
-
-  XmlRpcValue::ValueStruct &getMap()
-  {
-    return *_value.asStruct;
-  }
-};
-
-void EthercatHardware::loadNonEthercatDevices()
-{
-  // non-EtherCAT device drivers are descibed via struct named "non_ethercat_devices"
-  // Each element of "non_ethercat_devices" must be a struct that contains a "type" field.
-  // The element struct can also contain other elements that are used as configuration parameters
-  // for the device plugin.
-  // Example:
-  //   non_ethercat_devices:
-  //     netft1:
-  //       type: NetFT
-  //       address: 192.168.1.1
-  //       publish_period: 0.01
-  //     netft2:
-  //       type: NetFT
-  //       address: 192.168.1.2
-  //       publish_period: 0.01
-  //     dummy_device:
-  //       type: Dummy
-  //       msg: "This a dummy device"
-  //
-  //   The name of the device is used to create a ros::NodeHandle that is
-  //    that is passed to construct function of device class.
-  //   NOTE: construct function is not the same as C++ construtor
-  if (!node_.hasParam("non_ethercat_devices"))
-  {
-    // It is perfectly fine if there is no list of non-ethercat devices
-    return;
-  }
-
-  XmlRpc::XmlRpcValue devices;
-  node_.getParam("non_ethercat_devices", devices);
-  if (devices.getType() != XmlRpc::XmlRpcValue::TypeStruct)
-  {
-    ROS_ERROR("Rosparam 'non_ethercat_devices' is not a struct type");
-    return;
-  }
-
-  MyXmlRpcValue my_devices(devices);
-  typedef XmlRpc::XmlRpcValue::ValueStruct::value_type map_item_t;
-
-  BOOST_FOREACH(map_item_t &item, my_devices.getMap())
-  {
-    const std::string & name(item.first);
-    XmlRpc::XmlRpcValue & device_info(item.second);
-
-    if (device_info.getType() != XmlRpc::XmlRpcValue::TypeStruct)
-    {
-      ROS_ERROR("non_ethercat_devices/%s is not a struct type", name.c_str());
-      continue;
-    }
-
-    if (!device_info.hasMember("type"))
-    {
-      ROS_ERROR("non_ethercat_devices/%s 'type' element", name.c_str());
-      continue;
-    }
-
-    std::string type(static_cast<std::string> (device_info["type"]));
-
-    boost::shared_ptr<EthercatDevice> new_device =
-      configNonEthercatDevice(name, type);
-    if (new_device != NULL)
-    {
-      slaves_.push_back(new_device);
-    }
-  }
-}
-
 void EthercatHardware::collectDiagnostics()
 {
   if (NULL == oob_com_)
@@ -869,43 +758,4 @@ bool EthercatHardware::txandrx_PD(unsigned buffer_size, unsigned char* buffer, u
     oob_com_->tx();
   }
   return success;
-}
-
-bool EthercatHardware::publishTrace(int position, const string &reason, unsigned level,
-                                    unsigned delay)
-{
-  if (position >= (int) slaves_.size())
-  {
-    ROS_WARN("Invalid device position %d.  Use 0-%d, or -1.", position, int(slaves_.size()) - 1);
-    return false;
-  }
-
-  if (level > 2)
-  {
-    ROS_WARN("Invalid level : %d.  Using level=2 (ERROR).", level);
-    level = 2;
-  }
-
-  string new_reason("Manually triggered : " + reason);
-
-  bool retval = false;
-  if (position < 0)
-  {
-    for (unsigned i = 0; i < slaves_.size(); ++i)
-    {
-      if (slaves_[i]->publishTrace(new_reason, level, delay))
-      {
-        retval = true;
-      }
-    }
-  }
-  else
-  {
-    retval = slaves_[position]->publishTrace(new_reason, level, delay);
-    if (!retval)
-    {
-      ROS_WARN("Device %d does not support publishing trace", position);
-    }
-  }
-  return retval;
 }
