@@ -407,47 +407,47 @@ void EthercatHardware::init()
   }
 }
 
-void EthercatHardware::update(bool reset, bool halt)
+bool EthercatHardware::update()
 {
   unsigned char *this_buffer, *prev_buffer;
 
   // Convert HW Interface commands to MCB-specific buffers
   this_buffer = this_buffer_;
 
-  for (unsigned int s = 0; s < slaves_.size(); ++s)
-  {
-    // Pack the command structures into the EtherCAT buffer
-    slaves_[s]->packCommand(this_buffer);
-    this_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
-  }
+  // for (unsigned int s = 0; s < slaves_.size(); ++s)
+  // {
+  //   // Pack the command structures into the EtherCAT buffer
+  //   slaves_[s]->packCommand(this_buffer);
+  //   this_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
+  // }
 
   // Send/receive device process data
   bool success = txandrx_PD(buffer_size_, this_buffer_, max_pd_retries_);
+  return success;
+  // if (!success)
+  // {
+  //   // If process data didn't get sent after multiple retries
+  //   ROS_WARN("Failed to send process data");
+  // }
+  // else
+  // {
+  //   // Convert status back to HW Interface
+  //   this_buffer = this_buffer_;
+  //   prev_buffer = prev_buffer_;
+  //   for (unsigned int s = 0; s < slaves_.size(); ++s)
+  //   {
+  //     if (!slaves_[s]->unpackState(this_buffer, prev_buffer))
+  //     {
+  //       ROS_WARN("Failed to unpack state data");
+  //     }
+  //     this_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
+  //     prev_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
+  //   }
 
-  if (!success)
-  {
-    // If process data didn't get sent after multiple retries
-    ROS_WARN("Failed to send process data");
-  }
-  else
-  {
-    // Convert status back to HW Interface
-    this_buffer = this_buffer_;
-    prev_buffer = prev_buffer_;
-    for (unsigned int s = 0; s < slaves_.size(); ++s)
-    {
-      if (!slaves_[s]->unpackState(this_buffer, prev_buffer))
-      {
-        ROS_WARN("Failed to unpack state data");
-      }
-      this_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
-      prev_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
-    }
-
-    unsigned char *tmp = this_buffer_;
-    this_buffer_ = prev_buffer_;
-    prev_buffer_ = tmp;
-  }
+  //   unsigned char *tmp = this_buffer_;
+  //   this_buffer_ = prev_buffer_;
+  //   prev_buffer_ = tmp;
+  // }
 }
 
 boost::shared_ptr<EthercatDevice>

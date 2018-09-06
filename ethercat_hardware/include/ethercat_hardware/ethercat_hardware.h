@@ -108,10 +108,9 @@ public:
 
   /*!
    * \brief Send most recent motor commands and retrieve updates. This command must be run at a sufficient rate or else the motors will be disabled.
-   * \param reset A boolean indicating if the motor controller boards should be reset
-   * \param halt A boolean indicating if the motors should be halted
+   * \returns A boolean indicating success of the transmission
    */
-  void update(bool reset, bool halt);
+  virtual bool update();
 
   /*!
    * \brief Initialize the EtherCAT Master Library.

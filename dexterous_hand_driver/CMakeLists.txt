@@ -1,14 +1,13 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(ethercat_hardware)
+project(dexterous_hand_driver)
 
 include_directories(include
 )
 
 add_library(${PROJECT_NAME} SHARED
-    src/ethercat_com.cpp
-    src/ethercat_device.cpp
-    src/ethercat_hardware.cpp
-    src/ethernet_interface_info.cpp
+    src/main.cpp
+    src/ethercat_hardware_hand_0220.cpp
+    src/hand_driver_0220.cpp
 )
 # add_dependencies(${PROJECT_NAME}
 # )
