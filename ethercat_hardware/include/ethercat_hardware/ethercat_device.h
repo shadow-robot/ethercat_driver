@@ -140,7 +140,7 @@ public:
    * \param reset  when asserted this will clear diagnostic error conditions device safety disable
    * \param halt   while asserted will disable actuator, usually by disabling H-bridge
    */
-  virtual void packCommand(unsigned char *buffer, bool halt, bool reset)
+  virtual void packCommand(unsigned char *buffer)
   {
   }
   virtual bool unpackState(unsigned char *this_buffer, unsigned char *prev_buffer)

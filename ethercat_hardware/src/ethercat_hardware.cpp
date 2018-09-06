@@ -77,7 +77,6 @@ EthercatHardware::EthercatHardware(const std::string& name,
   prev_buffer_(NULL),
   buffer_size_(0),
   halt_motors_(true),
-  reset_state_(0),
   max_pd_retries_(10),
   allow_unprogrammed_(allow_unprogrammed),
   start_address_(0x00010000)
@@ -335,13 +334,11 @@ void EthercatHardware::init()
   // prev_buffer should contain valid status data when update function is first used
   memcpy(prev_buffer_, this_buffer_, buffer_size_);
 
-  last_published_ = ros::Time::now();
-
   // Initialize slaves
   //set<string> actuator_names;
   for (unsigned int slave = 0; slave < slaves_.size(); ++slave)
   {
-    if (slaves_[slave]->initialize(hw_, allow_unprogrammed_) < 0)
+    if (slaves_[slave]->initialize(allow_unprogrammed_) < 0)
     {
       EtherCAT_SlaveHandler *sh = slaves_[slave]->sh_;
       if (sh != NULL)
@@ -365,16 +362,14 @@ void EthercatHardware::init()
     static const int MAX_TIMEOUT = 100000; // 100ms = 100,000us
     static const int DEFAULT_TIMEOUT = 20000; // default to timeout to 20000us = 20ms
     int timeout;
-    if (!node_.getParam("realtime_socket_timeout", timeout))
-    {
-      timeout = DEFAULT_TIMEOUT;
-    }
-    if ((timeout <= 1) || (timeout > MAX_TIMEOUT))
-    {
-      int old_timeout = timeout;
-      timeout = std::max(1, std::min(MAX_TIMEOUT, timeout));
-      ROS_WARN("Invalid timeout (%d) for socket, using %d", old_timeout, timeout);
-    }
+
+    timeout = DEFAULT_TIMEOUT;
+    // if ((timeout <= 1) || (timeout > MAX_TIMEOUT))
+    // {
+    //   int old_timeout = timeout;
+    //   timeout = std::max(1, std::min(MAX_TIMEOUT, timeout));
+    //   ROS_WARN("Invalid timeout (%d) for socket, using %d", old_timeout, timeout);
+    // }
     if (set_socket_timeout(ni_, timeout))
     {
       ROS_FATAL("Error setting socket timeout to %d", timeout);
@@ -392,88 +387,47 @@ void EthercatHardware::init()
     // performance glitch in network or OS causes will cause the motors to halt.
     //
     // If number of retries is not specified, use a formula that allows 100ms of dropped packets
-    int max_pd_retries = MAX_TIMEOUT / timeout; // timeout is in nanoseconds : 20msec = 20000usec
+    int max_pd_retries = MAX_TIMEOUT / timeout; // timeout is in microseconds : 20msec = 20000usec
     static const int MAX_RETRIES = 50, MIN_RETRIES = 1;
-    node_.getParam("max_pd_retries", max_pd_retries);
-    // Make sure motor halt due to dropped packet takes less than 1/10 of a second
-    if ((max_pd_retries * timeout) > (MAX_TIMEOUT))
-    {
-      max_pd_retries = MAX_TIMEOUT / timeout;
-      ROS_WARN("Max PD retries is too large for given timeout.  Limiting value to %d",
-               max_pd_retries);
-    }
-    if ((max_pd_retries < MIN_RETRIES) || (max_pd_retries > MAX_RETRIES))
-    {
-      max_pd_retries = std::max(MIN_RETRIES, std::min(MAX_RETRIES, max_pd_retries));
-      ROS_WARN("Limiting max PD retries to %d", max_pd_retries);
-    }
-    max_pd_retries = std::max(MIN_RETRIES, std::min(MAX_RETRIES, max_pd_retries));
+
+    // // Make sure motor halt due to dropped packet takes less than 1/10 of a second
+    // if ((max_pd_retries * timeout) > (MAX_TIMEOUT))
+    // {
+    //   max_pd_retries = MAX_TIMEOUT / timeout;
+    //   ROS_WARN("Max PD retries is too large for given timeout.  Limiting value to %d",
+    //            max_pd_retries);
+    // }
+    // if ((max_pd_retries < MIN_RETRIES) || (max_pd_retries > MAX_RETRIES))
+    // {
+    //   max_pd_retries = std::max(MIN_RETRIES, std::min(MAX_RETRIES, max_pd_retries));
+    //   ROS_WARN("Limiting max PD retries to %d", max_pd_retries);
+    // }
+    // max_pd_retries = std::max(MIN_RETRIES, std::min(MAX_RETRIES, max_pd_retries));
     max_pd_retries_ = max_pd_retries;
   }
-
-  node_.setParam("EtherCAT_Initialized", true);
 }
 
 void EthercatHardware::update(bool reset, bool halt)
 {
-  // Update current time
-  ros::Time update_start_time(ros::Time::now());
-
   unsigned char *this_buffer, *prev_buffer;
 
   // Convert HW Interface commands to MCB-specific buffers
   this_buffer = this_buffer_;
 
-  if (halt)
-  {
-    ++diagnostics_.halt_motors_service_count_;
-    haltMotors(false /*no error*/, "service request");
-  }
-
-  // Resetting devices should clear device errors and release devices from halt.
-  // To reduce load on power system, release devices from halt, one at a time
-  const unsigned CYCLES_PER_HALT_RELEASE = 2; // Wait two cycles between releasing each device
-  if (reset)
-  {
-    ++diagnostics_.reset_motors_service_count_;
-    reset_state_ = CYCLES_PER_HALT_RELEASE * slaves_.size() + 5;
-    last_reset_ = update_start_time;
-    diagnostics_.halt_after_reset_ = false;
-  }
-  bool reset_devices = reset_state_ == CYCLES_PER_HALT_RELEASE * slaves_.size() + 3;
-  if (reset_devices)
-  {
-    halt_motors_ = false;
-    diagnostics_.motors_halted_ = false;
-    diagnostics_.motors_halted_reason_ = "";
-    diagnostics_.resetMaxTiming();
-    diagnostics_.pd_error_ = false;
-  }
-
   for (unsigned int s = 0; s < slaves_.size(); ++s)
   {
     // Pack the command structures into the EtherCAT buffer
-    // Disable the motor if they are halted or coming out of reset
-    bool halt_device = halt_motors_ || ((s * CYCLES_PER_HALT_RELEASE + 1) < reset_state_);
-    slaves_[s]->packCommand(this_buffer, halt_device, reset_devices);
+    slaves_[s]->packCommand(this_buffer);
     this_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
   }
-
-  // Transmit process data
-  ros::Time txandrx_start_time(ros::Time::now()); // Also end time for pack_command_stage
-  diagnostics_.pack_command_acc_((txandrx_start_time - update_start_time).toSec());
 
   // Send/receive device process data
   bool success = txandrx_PD(buffer_size_, this_buffer_, max_pd_retries_);
 
-  ros::Time txandrx_end_time(ros::Time::now()); // Also start unpack_state
-  diagnostics_.txandrx_acc_((txandrx_end_time - txandrx_start_time).toSec());
-
   if (!success)
   {
-    // If process data didn't get sent after multiple retries, stop motors
-    haltMotors(true /*error*/, "communication error");
-    diagnostics_.pd_error_ = true;
+    // If process data didn't get sent after multiple retries
+    ROS_WARN("Failed to send process data");
   }
   else
   {
@@ -482,96 +436,18 @@ void EthercatHardware::update(bool reset, bool halt)
     prev_buffer = prev_buffer_;
     for (unsigned int s = 0; s < slaves_.size(); ++s)
     {
-      if (!slaves_[s]->unpackState(this_buffer, prev_buffer) && !reset_devices)
+      if (!slaves_[s]->unpackState(this_buffer, prev_buffer))
       {
-        haltMotors(true /*error*/, "device error");
+        ROS_WARN("Failed to unpack state data");
       }
       this_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
       prev_buffer += slaves_[s]->command_size_ + slaves_[s]->status_size_;
     }
 
-    if (reset_state_)
-      --reset_state_;
-
     unsigned char *tmp = this_buffer_;
     this_buffer_ = prev_buffer_;
     prev_buffer_ = tmp;
   }
-
-  ros::Time unpack_end_time;
-  if (diagnostics_.collect_extra_timing_)
-  {
-    unpack_end_time = ros::Time::now(); // also start of publish time
-    diagnostics_.unpack_state_acc_((unpack_end_time - txandrx_end_time).toSec());
-  }
-
-  if ((update_start_time - last_published_) > ros::Duration(1.0))
-  {
-    last_published_ = update_start_time;
-    publishDiagnostics();
-    motor_publisher_.lock();
-    motor_publisher_.msg_.data = halt_motors_;
-    motor_publisher_.unlockAndPublish();
-  }
-
-  if (diagnostics_.collect_extra_timing_)
-  {
-    ros::Time publish_end_time(ros::Time::now());
-    diagnostics_.publish_acc_((publish_end_time - unpack_end_time).toSec());
-  }
-}
-
-void EthercatHardware::haltMotors(bool error, const char* reason)
-{
-  if (!halt_motors_)
-  {
-    // wasn't already halted
-    motor_publisher_.lock();
-    motor_publisher_.msg_.data = halt_motors_;
-    motor_publisher_.unlockAndPublish();
-
-    diagnostics_.motors_halted_reason_ = reason;
-    if (error)
-    {
-      ++diagnostics_.halt_motors_error_count_;
-      if ((ros::Time::now() - last_reset_) < ros::Duration(0.5))
-      {
-        // halted soon after reset
-        diagnostics_.halt_after_reset_ = true;
-      }
-    }
-  }
-
-  diagnostics_.motors_halted_ = true;
-  halt_motors_ = true;
-}
-
-void EthercatHardware::updateAccMax(double &max,
-                                    const accumulator_set<double, stats<tag::max, tag::mean> > &acc)
-{
-  max = std::max(max, extract_result<tag::max>(acc));
-}
-
-void EthercatHardware::publishDiagnostics()
-{
-  // // Update max timing values
-  // updateAccMax(diagnostics_.max_pack_command_, diagnostics_.pack_command_acc_);
-  // updateAccMax(diagnostics_.max_txandrx_, diagnostics_.txandrx_acc_);
-  // updateAccMax(diagnostics_.max_unpack_state_, diagnostics_.unpack_state_acc_);
-  // updateAccMax(diagnostics_.max_publish_, diagnostics_.publish_acc_);
-
-  // // Grab stats and counters from input thread
-  // diagnostics_.counters_ = ni_->counters;
-  // diagnostics_.input_thread_is_stopped_ = bool(ni_->is_stopped);
-
-  // diagnostics_.motors_halted_ = halt_motors_;
-
-  // // Clear statistics accumulators
-  // static accumulator_set<double, stats<tag::max, tag::mean> > blank;
-  // diagnostics_.pack_command_acc_ = blank;
-  // diagnostics_.txandrx_acc_ = blank;
-  // diagnostics_.unpack_state_acc_ = blank;
-  // diagnostics_.publish_acc_ = blank;
 }
 
 boost::shared_ptr<EthercatDevice>
@@ -583,103 +459,15 @@ EthercatHardware::configSlave(EtherCAT_SlaveHandler *sh)
   uint32_t revision = sh->get_revision();
   unsigned slave = sh->get_station_address() - 1;
 
-  // The point of this code to find a class whose name matches the EtherCAT
-  // product ID for a given device.
-  // Thus device plugins would register themselves with PLUGINLIB_EXPORT_CLASS
-  //
-  //    PLUGINLIB_EXPORT_CLASS(class_type, base_class_type)
-  //
-  // and in the plugin.xml, specify name="" inside the <class> tag:
-  //
-  //    <class name="package/serial"
-  //           base_class_type="ethercat_hardware::EthercatDevice" />
-  //
-  //
-  // For the WG05 driver (productID = 6805005), this statement would look
-  // something like:
-  //
-  //    PLUGINLIB_EXPORT_CLASS(WG05, EthercatDevice)
-  //
-  // and in the plugin.xml:
-  //
-  //    <class name="ethercat_hardware/6805005" type="WG05"
-  //           base_class_type="EthercatDevice">
-  //      <description>
-  //        WG05 - Generic Motor Control Board
-  //      </description>
-  //    </class>
-  //
-  //
-  // Unfortunately, we don't know which ROS package that a particular driver is defined in.
-  // To account for this, we search through the list of class names, one-by-one and find string where
-  // last part of string matches product ID of device.
-  stringstream class_name_regex_str;
-  class_name_regex_str << "(.*/)?" << product_code;
-  boost::regex class_name_regex(class_name_regex_str.str(), boost::regex::extended);
-
-  std::vector<std::string> classes = device_loader_.getDeclaredClasses();
-  std::string matching_class_name;
-
-  BOOST_FOREACH(const std::string &class_name, classes)
-  {
-    if (regex_match(class_name, class_name_regex))
-    {
-      if (matching_class_name.size() != 0)
-      {
-        ROS_ERROR("Found more than 1 EtherCAT driver for device with product code : %d", product_code);
-        ROS_ERROR("First class name = '%s'.  Second class name = '%s'",
-                  class_name.c_str(), matching_class_name.c_str());
-      }
-      matching_class_name = class_name;
-    }
-  }
-
-  if (matching_class_name.size() != 0)
-  {
-    ROS_WARN("Using device '%s' with product code %d",
-             device_loader_.getClassDescription(matching_class_name).c_str(),
-             product_code);
-    try
-    {
-      p = device_loader_.createInstance(matching_class_name);
-    }
-    catch (pluginlib::LibraryLoadException &e)
-    {
-      p.reset();
-      ROS_FATAL("Unable to load plugin for slave #%d, product code: %u (0x%X), serial: %u (0x%X), revision: %d (0x%X)",
-                slave,
-                product_code, product_code, serial, serial, revision, revision);
-      ROS_FATAL("%s", e.what());
-    }
-  }
-  else
-  {
-    if ((product_code == 0xbaddbadd) || (serial == 0xbaddbadd) || (revision == 0xbaddbadd))
-    {
-      ROS_FATAL("Note: 0xBADDBADD indicates that the value was not read correctly from device.");
-      ROS_FATAL("Perhaps you should power-cycle the MCBs");
-    }
-    else
-    {
-      ROS_ERROR("Unable to load plugin for slave #%d, product code: %u (0x%X), serial: %u (0x%X), revision: %d (0x%X)",
-                slave,
-                product_code, product_code, serial, serial, revision, revision);
-      ROS_ERROR("Possible classes:");
-
-      BOOST_FOREACH(const std::string &class_name, classes)
-      {
-        ROS_ERROR("  %s", class_name.c_str());
-      }
-
-      // TODO, use default plugin for ethercat devices that have no driver.
-      // This way, the EtherCAT chain still works.
-    }
-  }
-
-  if (p != NULL)
-  {
-    p->construct(sh, start_address_);
-  }
+  // if (product_code == 12345678)
+  // {
+  //   p.reset(new class_off_12345678());
+  // }
+  
+  // if (p != NULL)
+  // {
+  //   p->construct(sh, start_address_);
+  // }
 
   return p;
 }

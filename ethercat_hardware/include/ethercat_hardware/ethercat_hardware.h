@@ -130,17 +130,6 @@ public:
    */
   bool txandrx_PD(unsigned buffer_size, unsigned char* buffer, unsigned tries);
 
-  /*!
-   * \brief Ask one or all EtherCAT devices to publish (motor) traces
-   * \param position device ring position to publish trace for.  Use -1 to trigger all devices.
-   * \param reason Message to put in trace as reason.
-   * \param level Level to put in trace (aka ERROR=2, WARN=1, OK=0)
-   * \param delay Publish trace after delay cycles.  For 1kHz realtime loop 1cycle = 1ms.
-   * \return Return true if device supports publishing trace.  False, if not.
-   *         If all devices are triggered, returns true if any device publishes trace.
-   */
-  bool publishTrace(int position, const string &reason, unsigned level, unsigned delay);
-
   const std::vector<boost::shared_ptr<const EthercatDevice> > getSlaves() const
   {
     return std::vector<boost::shared_ptr<const EthercatDevice> >(slaves_.begin(), slaves_.end());
@@ -153,11 +142,7 @@ private:
   boost::shared_ptr<EthercatDevice> configNonEthercatDevice(const std::string &product_id,
                                                             const std::string &data);
 
-  void haltMotors(bool error, const char* reason);
-
-  void publishDiagnostics(); //!< Collects raw diagnostics data and passes it to diagnostics_publisher
-  static void updateAccMax(double &max, const accumulator_set<double, stats<tag::max, tag::mean> > &acc);
-  boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
+  virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
   bool setRouterToSlaveHandlers();
 
   struct netif *ni_;
