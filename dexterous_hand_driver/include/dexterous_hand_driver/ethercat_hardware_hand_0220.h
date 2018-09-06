@@ -39,7 +39,10 @@
 
 class EthercatHardwareHand0220 : public EthercatHardware
 {
-
+public:
+  bool send_and_receive_from_hand_0220(unsigned char *command_buffer, unsigned char *status_buffer);
+private:
+  virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
 };
 
 #endif  // ETHERCAT_HARDWARE_HAND_0220_H

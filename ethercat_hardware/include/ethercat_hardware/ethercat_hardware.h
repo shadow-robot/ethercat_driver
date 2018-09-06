@@ -110,7 +110,7 @@ public:
    * \brief Send most recent motor commands and retrieve updates. This command must be run at a sufficient rate or else the motors will be disabled.
    * \returns A boolean indicating success of the transmission
    */
-  virtual bool update();
+  bool update();
 
   /*!
    * \brief Initialize the EtherCAT Master Library.
@@ -136,10 +136,6 @@ public:
 
 private:
   static void changeState(EtherCAT_SlaveHandler *sh, EC_State new_state);
-
-  void loadNonEthercatDevices();
-  boost::shared_ptr<EthercatDevice> configNonEthercatDevice(const std::string &product_id,
-                                                            const std::string &data);
 
   virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
   bool setRouterToSlaveHandlers();
