@@ -32,8 +32,8 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-#ifndef ETHERCAT_HARDWARE_HAND_0220_H
-#define ETHERCAT_HARDWARE_HAND_0220_H
+#ifndef HAND_DRIVER_0220_H
+#define HAND_DRIVER_0220_H
 
 #include <ethercat_device.h>
 
@@ -42,4 +42,4 @@ class HandDriver0220 : public EthercatDevice
 
 };
 
-#endif  // ETHERCAT_HARDWARE_HAND_0220_H
+#endif  // HAND_DRIVER_0220_H
