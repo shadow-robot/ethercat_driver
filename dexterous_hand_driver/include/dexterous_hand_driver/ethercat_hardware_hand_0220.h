@@ -45,7 +45,7 @@ class EthercatHardwareHand0220 : public EthercatHardware
 {
 public:
   EthercatHardwareHand0220();
-  ~EthercatHardwareHand0220();
+  virtual ~EthercatHardwareHand0220();
   bool initializeHand0220();
   bool sendAndReceiveFromHand0220(unsigned char *command_buffer /* this will be a struct */, unsigned char *status_buffer /* this will be a struct */);
   void setCommandForHand0220(unsigned char *command_buffer /* this will be a struct */);

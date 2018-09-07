@@ -58,6 +58,7 @@ public:
 private:
   int command_base_;
   int status_base_;
+  std::string serial_number_;
   
 };
 }

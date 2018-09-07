@@ -32,7 +32,54 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
+#include "dexterous_hand_driver/ethercat_hardware_hand_0220.h"
+#include "ethercat_hardware/log.h"
+
 namespace dexterous_hand_driver
 {
+  EthercatHardwareHand0220::EthercatHardwareHand0220()
+  : EthercatHardware::EthercatHardware("enp0s25", false) // eth port name will be read in initialize, not set in constructor
+  {
 
+  }
+
+  EthercatHardwareHand0220::~EthercatHardwareHand0220()
+  {
+
+  }
+
+  bool EthercatHardwareHand0220::initializeHand0220()
+  {
+    // Read relevant configuration (from file for the moment)
+
+    if (!interface_.empty())
+    {
+      init();
+    }
+    else
+    {
+      ROS_DEBUG("No ethercat interface given. EthercatHardware will not be initialized");
+    }
+  }
+
+  boost::shared_ptr<EthercatDevice> EthercatHardwareHand0220::configSlave(EtherCAT_SlaveHandler *sh)
+  {
+    boost::shared_ptr<EthercatDevice> p;
+    unsigned product_code = sh->get_product_code();
+    unsigned serial = sh->get_serial();
+    uint32_t revision = sh->get_revision();
+    unsigned slave = sh->get_station_address() - 1;
+
+    if (product_code == 33554692)
+    {
+      p.reset(new HandDriver0220());
+    }
+
+    if (p != NULL)
+    {
+      p->construct(sh, start_address_);
+    }
+
+    return p;
+  }
 }

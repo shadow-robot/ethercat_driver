@@ -99,12 +99,12 @@ public:
   /*!
    * \brief Constructor
    */
-  EthercatHardware(const std::string& name, const string &eth, bool allow_unprogrammed);
+  EthercatHardware(const string &eth, bool allow_unprogrammed);
 
   /*!
    * \brief Destructor
    */
-  ~EthercatHardware();
+  virtual ~EthercatHardware();
 
   /*!
    * \brief Send most recent motor commands and retrieve updates. This command must be run at a sufficient rate or else the motors will be disabled.
@@ -134,6 +134,10 @@ public:
     return std::vector<boost::shared_ptr<const EthercatDevice> >(slaves_.begin(), slaves_.end());
   }
 
+protected:
+  string interface_; //!< The socket interface that is connected to the EtherCAT devices (e.g., eth0)
+  int start_address_;
+
 private:
   static void changeState(EtherCAT_SlaveHandler *sh, EC_State new_state);
 
@@ -141,8 +145,6 @@ private:
   bool setRouterToSlaveHandlers();
 
   struct netif *ni_;
-
-  string interface_; //!< The socket interface that is connected to the EtherCAT devices (e.g., eth0)
 
   EtherCAT_DataLinkLayer m_dll_instance_;
   EC_Logic m_logic_instance_;
@@ -172,8 +174,6 @@ private:
   EthercatOobCom *oob_com_;
 
   bool allow_unprogrammed_; //!< if the driver should treat the discovery of unprogrammed boards as a fatal error. Set to 'true' during board configuration, and set to 'false' otherwise.
-
-  int start_address_;
 };
 
 #endif /* ETHERCAT_HARDWARE_H */

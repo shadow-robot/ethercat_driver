@@ -67,8 +67,7 @@ void EthercatHardwareDiagnostics::resetMaxTiming()
   max_publish_ = 0.0;
 }
 
-EthercatHardware::EthercatHardware(const std::string& name,
-                                   const std::string& eth,
+EthercatHardware::EthercatHardware(const std::string& eth,
                                    bool allow_unprogrammed) :
   ni_(NULL),
   interface_(eth),
@@ -81,10 +80,7 @@ EthercatHardware::EthercatHardware(const std::string& name,
   allow_unprogrammed_(allow_unprogrammed),
   start_address_(0x00010000)
 {
-  if (!interface_.empty())
-    init();
-  else
-    ROS_DEBUG("No ethercat interface given. EthercatHardware will not be initialized");
+
 }
 
 EthercatHardware::~EthercatHardware()
