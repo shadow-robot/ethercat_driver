@@ -35,11 +35,30 @@
 #ifndef HAND_DRIVER_0220_H
 #define HAND_DRIVER_0220_H
 
-#include <ethercat_device.h>
+#include <ethercat_hardware/ethercat_device.h>
 
+namespace dexterous_hand_driver
+{
 class HandDriver0220 : public EthercatDevice
 {
+public:
+  HandDriver0220();
 
+  virtual void construct(EtherCAT_SlaveHandler *sh, int &start_address);
+  virtual void construct(EtherCAT_SlaveHandler *sh, int &start_address, unsigned int ethercat_command_data_size,
+                         unsigned int ethercat_status_data_size, unsigned int ethercat_can_bridge_data_size,
+                         unsigned int ethercat_command_data_address, unsigned int ethercat_status_data_address,
+                         unsigned int ethercat_can_bridge_data_command_address,
+                         unsigned int ethercat_can_bridge_data_status_address);
+
+  virtual void packCommand(unsigned char *buffer);
+
+  virtual bool unpackState(unsigned char *this_buffer, unsigned char *prev_buffer);
+
+private:
+  int command_base_;
+  int status_base_;
+  
 };
-
+}
 #endif  // HAND_DRIVER_0220_H

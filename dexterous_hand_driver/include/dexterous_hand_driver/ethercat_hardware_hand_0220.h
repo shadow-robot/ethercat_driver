@@ -35,14 +35,27 @@
 #ifndef ETHERCAT_HARDWARE_HAND_0220_H
 #define ETHERCAT_HARDWARE_HAND_0220_H
 
-#include <ethercat_hardware.h>
+#include <ethercat_hardware/ethercat_hardware.h>
+#include "dexterous_hand_driver/hand_driver_0220.h"
+
+namespace dexterous_hand_driver
+{
 
 class EthercatHardwareHand0220 : public EthercatHardware
 {
 public:
-  bool send_and_receive_from_hand_0220(unsigned char *command_buffer, unsigned char *status_buffer);
+  EthercatHardwareHand0220();
+  ~EthercatHardwareHand0220();
+  bool initializeHand0220();
+  bool sendAndReceiveFromHand0220(unsigned char *command_buffer /* this will be a struct */, unsigned char *status_buffer /* this will be a struct */);
+  void setCommandForHand0220(unsigned char *command_buffer /* this will be a struct */);
+  void getStatusFromHand0220(unsigned char *status_buffer /* this will be a struct */);
+
 private:
   virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
-};
 
+
+  boost::shared_ptr<HandDriver0220> hand_driver_;
+};
+}
 #endif  // ETHERCAT_HARDWARE_HAND_0220_H

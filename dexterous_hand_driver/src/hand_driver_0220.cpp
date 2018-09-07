@@ -31,3 +31,16 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
+
+#include "dexterous_hand_driver/hand_driver_0220.h"
+
+
+namespace dexterous_hand_driver
+{
+
+void HandDriver0220::construct(EtherCAT_SlaveHandler *sh, int &start_address)
+{
+  
+}
+
+}

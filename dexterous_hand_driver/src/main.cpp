@@ -32,9 +32,10 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
-#include "ethercat_hardware_hand_0220.h"
+#include "dexterous_hand_driver/ethercat_hardware_hand_0220.h"
 
 int main(int argc, char *argv[])
 {
- 
+  dexterous_hand_driver::EthercatHardwareHand0220 hand;
+  hand.initializeHand0220();
 }
