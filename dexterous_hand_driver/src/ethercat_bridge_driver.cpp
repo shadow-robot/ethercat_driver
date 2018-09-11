@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Shadow Robot Company Ltd. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,28 +32,43 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
+#include "dexterous_hand_driver/ethercat_bridge_driver.h"
 
-#ifndef __ROS_H__
-#define __ROS_H__
+#include <sstream>
+#include <iomanip>
 
-#include <stdio.h>
+#include "ethercat_hardware/log.h"
 
-#define LOG_DEBUG     4
-#define LOG_INFO      3
-#define LOG_WARNING   2
-#define LOG_ERROR     1
-#define LOG_FATAL     0
-#define LOG_LEVEL     3
+#define ETHERCAT_STATUS_DATA_SIZE sizeof(ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS)
+#define ETHERCAT_COMMAND_DATA_SIZE sizeof(ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND)
 
-#define ROS_DEBUG(msg, ...) \
-  if (LOG_DEBUG <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_INFO(msg, ...) \
-  if (LOG_INFO <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_WARN(msg, ...) \
-  if (LOG_WARNING <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_ERROR(msg, ...) \
-  if (LOG_ERROR <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_FATAL(msg, ...) \
-  if (LOG_FATAL <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
+#define ETHERCAT_CAN_BRIDGE_DATA_SIZE sizeof(ETHERCAT_CAN_BRIDGE_DATA)
 
-#endif // __ROS_H__
+#define ETHERCAT_COMMAND_DATA_ADDRESS                   PALM_0200_ETHERCAT_COMMAND_DATA_ADDRESS
+#define ETHERCAT_STATUS_DATA_ADDRESS                    PALM_0200_ETHERCAT_STATUS_DATA_ADDRESS
+#define ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS        PALM_0200_ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS
+#define ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS         PALM_0200_ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS
+
+namespace dexterous_hand_driver
+{
+  EthercatBridgeDriver::EthercatBridgeDriver()
+  {
+  }
+
+  void EthercatBridgeDriver::construct(EtherCAT_SlaveHandler *sh, int &start_address)
+  {
+    EthercatDevice::construct(sh, start_address);
+
+    ROS_INFO("Shadow Bridge configure -  %d @ %d", sh_->get_product_code(), sh_->get_ring_position());
+  }
+
+  void EthercatBridgeDriver::packCommand(unsigned char *buffer)
+  {
+
+  }
+
+  bool EthercatBridgeDriver::unpackState(unsigned char *this_buffer, unsigned char *prev_buffer)
+  {
+
+  }
+}

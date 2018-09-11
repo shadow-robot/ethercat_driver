@@ -70,9 +70,13 @@ namespace dexterous_hand_driver
     uint32_t revision = sh->get_revision();
     unsigned slave = sh->get_station_address() - 1;
 
-    if (product_code == 33554692)
+    if (product_code == 6)
     {
       p.reset(new HandDriver0220());
+    }
+    else if (product_code == 0)
+    {
+      p.reset(new EthercatBridgeDriver());
     }
 
     if (p != NULL)
@@ -81,5 +85,10 @@ namespace dexterous_hand_driver
     }
 
     return p;
+  }
+
+  bool EthercatHardwareHand0220::sendAndReceiveFromHand0220(unsigned char *command_buffer /* this will be a struct */, unsigned char *status_buffer /* this will be a struct */)
+  {
+    update();
   }
 }

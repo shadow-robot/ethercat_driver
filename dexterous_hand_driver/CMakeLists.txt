@@ -10,6 +10,7 @@ include_directories(${Boost_INCLUDE_DIRS})
 add_library(${PROJECT_NAME} SHARED
     src/ethercat_hardware_hand_0220.cpp
     src/hand_driver_0220.cpp
+    src/ethercat_bridge_driver.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} ethercat_hardware eml ${Boost_LIBRARIES})

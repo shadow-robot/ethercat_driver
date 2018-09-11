@@ -37,6 +37,7 @@
 
 #include <ethercat_hardware/ethercat_hardware.h>
 #include "dexterous_hand_driver/hand_driver_0220.h"
+#include "dexterous_hand_driver/ethercat_bridge_driver.h"
 
 namespace dexterous_hand_driver
 {
@@ -56,6 +57,7 @@ private:
 
 
   boost::shared_ptr<HandDriver0220> hand_driver_;
+  boost::shared_ptr<EthercatBridgeDriver> ethercat_bridge_driver_;
 };
 }
 #endif  // ETHERCAT_HARDWARE_HAND_0220_H

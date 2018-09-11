@@ -38,4 +38,10 @@ int main(int argc, char *argv[])
 {
   dexterous_hand_driver::EthercatHardwareHand0220 hand;
   hand.initializeHand0220();
+
+  while(1)
+  {
+    hand.sendAndReceiveFromHand0220(NULL, NULL);
+    usleep(1000);
+  }
 }

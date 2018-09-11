@@ -14,7 +14,7 @@
  *     copyright notice, this list of conditions and the following
  *     disclaimer in the documentation and/or other materials provided
  *     with the distribution.
- *   * Neither the name of the Willow Garage nor the names of its
+ *   * Neither the name of Shadow Robot Company Ltd. nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  *
@@ -32,28 +32,29 @@
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
 
+#ifndef ETHERCAT_BRIDGE_DRIVER_H
+#define ETHERCAT_BRIDGE_DRIVER_H
 
-#ifndef __ROS_H__
-#define __ROS_H__
+#include <ethercat_hardware/ethercat_device.h>
 
-#include <stdio.h>
+namespace dexterous_hand_driver
+{
+class EthercatBridgeDriver : public EthercatDevice
+{
+public:
+  EthercatBridgeDriver();
 
-#define LOG_DEBUG     4
-#define LOG_INFO      3
-#define LOG_WARNING   2
-#define LOG_ERROR     1
-#define LOG_FATAL     0
-#define LOG_LEVEL     3
+  virtual void construct(EtherCAT_SlaveHandler *sh, int &start_address);
 
-#define ROS_DEBUG(msg, ...) \
-  if (LOG_DEBUG <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_INFO(msg, ...) \
-  if (LOG_INFO <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_WARN(msg, ...) \
-  if (LOG_WARNING <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_ERROR(msg, ...) \
-  if (LOG_ERROR <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
-#define ROS_FATAL(msg, ...) \
-  if (LOG_FATAL <= LOG_LEVEL) fprintf(stderr, (std::string(msg) + "\n").c_str(), ## __VA_ARGS__)
+  virtual void packCommand(unsigned char *buffer);
 
-#endif // __ROS_H__
+  virtual bool unpackState(unsigned char *this_buffer, unsigned char *prev_buffer);
+
+private:
+  int command_base_;
+  int status_base_;
+  std::string serial_number_;
+  
+};
+}
+#endif  // ETHERCAT_BRIDGE_DRIVER_H
