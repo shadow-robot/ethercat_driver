@@ -137,6 +137,7 @@ public:
 protected:
   string interface_; //!< The socket interface that is connected to the EtherCAT devices (e.g., eth0)
   int start_address_;
+  std::vector<boost::shared_ptr<EthercatDevice> > slaves_;
 
 private:
   static void changeState(EtherCAT_SlaveHandler *sh, EC_State new_state);
@@ -153,7 +154,6 @@ private:
   EtherCAT_Router *m_router_;
   EtherCAT_Master *ethercat_master_;
 
-  std::vector<boost::shared_ptr<EthercatDevice> > slaves_;
   unsigned int num_ethercat_devices_;
 
   unsigned char *this_buffer_;

@@ -42,22 +42,40 @@
 namespace dexterous_hand_driver
 {
 
+struct EthercatHand0220Command
+{
+  Hand0220Command* hand_1;
+  // More members would have to be declared here if more ethercat slaves are present in the bus (bridge doesn't have data so it is not here)
+  // e.g. if a second dexterous hand is connected to the same etherCAT bus we would need to declare a hand_2 field
+};
+
+struct EthercatHand0220State
+{
+  Hand0220State* hand_1;
+  // More members would have to be declared here if more ethercat slaves are present in the bus (bridge doesn't have data so it is not here)
+  // e.g. if a second dexterous hand is connected to the same etherCAT bus we would need to declare a hand_2 field
+};
+
 class EthercatHardwareHand0220 : public EthercatHardware
 {
 public:
   EthercatHardwareHand0220();
   virtual ~EthercatHardwareHand0220();
   bool initializeHand0220();
-  bool sendAndReceiveFromHand0220(unsigned char *command_buffer /* this will be a struct */, unsigned char *status_buffer /* this will be a struct */);
+  bool sendAndReceiveFromHand0220();
   void setCommandForHand0220(unsigned char *command_buffer /* this will be a struct */);
   void getStatusFromHand0220(unsigned char *status_buffer /* this will be a struct */);
+  EthercatHand0220Command* getCommandStruct();
+  EthercatHand0220State* getStateStruct();
 
 private:
   virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
-
+  boost::shared_ptr<EthercatDevice> findHand();
 
   boost::shared_ptr<HandDriver0220> hand_driver_;
   boost::shared_ptr<EthercatBridgeDriver> ethercat_bridge_driver_;
+  EthercatHand0220Command command_;
+  EthercatHand0220State state_;
 };
 }
 #endif  // ETHERCAT_HARDWARE_HAND_0220_H

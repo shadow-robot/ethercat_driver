@@ -53,6 +53,7 @@
 namespace dexterous_hand_driver
 {
   HandDriver0220::HandDriver0220()
+    :initialized_(false)
   {
   }
 
@@ -158,11 +159,65 @@ namespace dexterous_hand_driver
 
   void HandDriver0220::packCommand(unsigned char *buffer)
   {
+    // We cast the buffer to the low level command structure so that we can fill its fields 
+    // directly in the transmission buffer
+    ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND *command =
+          reinterpret_cast<ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND *>(buffer);
 
+    if (!initialized_)
+    {
+      // TODO here we should transmit the necessary parameters to the hand
+      // it will take several consecutive frames to do so
+      // When all parameters have bee sent and correctly received (this is checked in unpackState)
+      // unpackState will set the variable initialized_=true
+
+      // The values in the "high_level_command_" structure are ignored during initialization
+    }
+    else
+    {
+      //TODO here we should
+
+      // Take the values in the structure "high_level_command_" and write them to the structure "command"
+
+      // Fill the tactile polling parameters to sequentially read all the values from the biotac sensors
+    }
   }
 
   bool HandDriver0220::unpackState(unsigned char *this_buffer, unsigned char *prev_buffer)
   {
+    ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data =
+          reinterpret_cast<ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *>(this_buffer + command_size_);
+    if (!initialized_)
+    {
+      // TODO here we should check the values that tell us that the necessary parameters
+      // were correctly received by the hand
 
+
+      // When that happens
+      // initialized_ = true;
+
+      // We don't set the values to the high_level_state_ structure during initialization
+    }
+    else
+    {
+      //TODO here we should
+
+      // Take the values in the structure "state_data" and write them to the structure "high_level_command_"
+    }
+  }
+
+  Hand0220Command* HandDriver0220::getCommandStruct()
+  {
+    return &high_level_command_;
+  }
+
+  Hand0220State* HandDriver0220::getStateStruct()
+  {
+    return &high_level_state_;
+  }
+
+  bool HandDriver0220::initialized()
+  {
+    return initialized_;
   }
 }

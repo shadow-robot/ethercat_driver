@@ -37,8 +37,41 @@
 
 #include <ethercat_hardware/ethercat_device.h>
 
+#include <array>
+
+#define HAND_DRIVER_0220_NB_JOINTS              24
+#define HAND_DRIVER_0220_NB_RAW_SENSORS         37
+#define HAND_DRIVER_0220_NB_MOTORS              20
+#define HAND_DRIVER_0220_NB_BIOTAC_ELECTRODES   24
+#define HAND_DRIVER_0220_NB_FINGERS             5
+
 namespace dexterous_hand_driver
 {
+
+struct BiotacData
+{
+  int pac0;
+  int pac1;
+  int pdc;
+  int tac;
+  int tdc;
+  std::array<int, HAND_DRIVER_0220_NB_BIOTAC_ELECTRODES> electrodes = {{-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}};
+};
+
+struct Hand0220Command
+{
+  bool use_pwm;
+  std::array<int, HAND_DRIVER_0220_NB_MOTORS> pwm_command = {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+  std::array<int, HAND_DRIVER_0220_NB_MOTORS> torque_command = {{0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}};
+};
+
+struct Hand0220State
+{
+  std::array<int, HAND_DRIVER_0220_NB_RAW_SENSORS>  raw_position;
+  std::array<int, HAND_DRIVER_0220_NB_JOINTS>  calibrated_position;
+  std::array<BiotacData, HAND_DRIVER_0220_NB_FINGERS> biotac_data;
+};
+
 class HandDriver0220 : public EthercatDevice
 {
 public:
@@ -55,11 +88,17 @@ public:
 
   virtual bool unpackState(unsigned char *this_buffer, unsigned char *prev_buffer);
 
+  Hand0220Command* getCommandStruct();
+  Hand0220State* getStateStruct();
+  bool initialized();
+
 private:
   int command_base_;
   int status_base_;
   std::string serial_number_;
-  
+  Hand0220Command high_level_command_;
+  Hand0220State high_level_state_;
+  bool initialized_;
 };
 }
 #endif  // HAND_DRIVER_0220_H
