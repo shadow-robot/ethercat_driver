@@ -37,7 +37,6 @@
 #include <sstream>
 #include <iomanip>
 
-// #include "dexterous_hand_driver/hand_h/RAMCIP_Protocol_Version_2_0x02000104_00.h"
 #include "dexterous_hand_driver/external/0220_palm_edc/0220_palm_edc_ethercat_protocol.h"
 #include "ethercat_hardware/log.h"
 
@@ -166,97 +165,4 @@ namespace dexterous_hand_driver
   {
 
   }
-
-  // void HandDriver0220::construct(EtherCAT_SlaveHandler *sh, int &start_address)
-  // {
-  //   sh_ = sh;
-
-  //   std::stringstream serial_number_string_stream;
-  //   serial_number_string_stream << std::setfill('0') << std::setw(9) << sh->get_serial();
-  //   serial_number_ = serial_number_string_stream.str();
-
-  //   // Set up ethercat device
-  //   command_base_  = start_address;
-  //   command_size_  = COMMAND_ARRAY_SIZE_BYTES;
-
-  //   start_address += command_size_;
-  //   status_base_   = start_address;
-  //   status_size_   = STATUS_ARRAY_SIZE_BYTES;
-
-  //   start_address += status_size_;
-
-  //   // ETHERCAT_COMMAND_DATA
-  //   //
-  //   // This is for data going TO the board
-  //   //
-
-  //   if ( (PROTOCOL_TYPE) == (EC_BUFFERED) )
-  //   {
-  //     ROS_INFO("Using EC_BUFFERED");
-  //   }
-  //   else if ( (PROTOCOL_TYPE) == (EC_QUEUED) )
-  //   {
-  //     ROS_INFO("Using EC_QUEUED");
-  //   }
-
-  //   ROS_INFO("First FMMU (command) : Logical address: 0x%08X ; size: %3d bytes ; ET1200 address: 0x%08X", command_base_,
-  //           command_size_, static_cast<int>(COMMAND_ADDRESS) );
-  //   EC_FMMU *commandFMMU = new EC_FMMU(command_base_,            // Logical Start Address    (in ROS address space?)
-  //                                     command_size_,
-  //                                     0x00,                     // Logical Start Bit
-  //                                     0x07,                     // Logical End Bit
-  //                                     COMMAND_ADDRESS,          // Physical Start Address  (in ET1200 address space?)
-  //                                     0x00,                     // Physical Start Bit
-  //                                     false,                    // Read Enable
-  //                                     true,                     // Write Enable
-  //                                     true);                    // Channel Enable
-
-  //   // WARNING!!!
-  //   // We are leaving (command_size_ * 4) bytes in the physical memory of the device, but strictly we only need to
-  //   // leave (command_size_ * 3). This change should be done in the firmware as well, otherwise it won't work.
-  //   // This triple buffer is needed in the ethercat devices to work in EC_BUFFERED mode (in opposition to the other mode
-  //   // EC_QUEUED, the so called mailbox mode)
-
-  //   // ETHERCAT_STATUS_DATA
-  //   //
-  //   // This is for data coming FROM the board
-  //   //
-  //   ROS_INFO("Second FMMU (status) : Logical address: 0x%08X ; size: %3d bytes ; ET1200 address: 0x%08X", status_base_,
-  //           status_size_, static_cast<int>(STATUS_ADDRESS) );
-  //   EC_FMMU *statusFMMU = new EC_FMMU(status_base_,
-  //                                     status_size_,
-  //                                     0x00,
-  //                                     0x07,
-  //                                     STATUS_ADDRESS,
-  //                                     0x00,
-  //                                     true,
-  //                                     false,
-  //                                     true);
-
-
-  //   EtherCAT_FMMU_Config *fmmu = new EtherCAT_FMMU_Config(2);
-
-  //   (*fmmu)[0] = *commandFMMU;
-  //   (*fmmu)[1] = *statusFMMU;
-
-  //   sh->set_fmmu_config(fmmu);
-
-  //   EtherCAT_PD_Config *pd = new EtherCAT_PD_Config(2);
-
-  // // SyncMan takes the physical address
-  //   (*pd)[0] = EC_SyncMan(COMMAND_ADDRESS,              command_size_,    PROTOCOL_TYPE, EC_WRITTEN_FROM_MASTER);
-  //   (*pd)[1] = EC_SyncMan(STATUS_ADDRESS,               status_size_,     PROTOCOL_TYPE);
-
-
-  //   (*pd)[0].ChannelEnable = true;
-  //   (*pd)[0].ALEventEnable = true;
-  //   (*pd)[0].WriteEvent    = true;
-
-  //   (*pd)[1].ChannelEnable = true;
-
-  //   sh->set_pd_config(pd);
-
-  //   ROS_INFO("Finished constructing the FhThreeJointsFinger driver");
-  // }
-
 }
