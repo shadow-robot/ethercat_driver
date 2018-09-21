@@ -164,6 +164,8 @@ namespace dexterous_hand_driver
     ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND *command =
           reinterpret_cast<ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND *>(buffer);
 
+    command->EDC_command = EDC_COMMAND_SENSOR_DATA;
+
     if (!initialized_)
     {
       // TODO here we should transmit the necessary parameters to the hand
@@ -172,6 +174,40 @@ namespace dexterous_hand_driver
       // unpackState will set the variable initialized_=true
 
       // The values in the "high_level_command_" structure are ignored during initialization
+
+      // All the initialization stuff that needs to be added here happens in this function in the ROS driver 
+      // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_robot_lib/src/sr_motor_robot_lib.cpp#L197
+
+
+      // The FROM_MOTOR commands can currently be ignored for the moment, as they are not necessary to operate the hand
+      
+      // The so called initialization of the tactiles can also be omitted, as it basically checks the type of tactile and version
+      // and we assume for the moment that these are biotacs with the latest protocol
+
+      // We need to send a reset signal and then the initialization parameters to the motor boards.
+      // Reset is necessary to make the motor jiggle the joint to zero the strain gauges.
+      // The parameters we want to send (referred as pid commands for the motor) are contained in this file:
+      // https://github.com/shadow-robot/sr-config/blob/shadowrobot_180504/sr_ethercat_hand_config/controls/motors/rh/motor_board_effort_controllers.yaml
+      // The parameter pos_filter is not actually one of the ones we send to the motor. It is a parameter for the position filter in the ROS driver.
+      // It might not be necessary to filter the position.
+
+      // In the ROS driver these parameters are enqueued here:
+      // - The reset command is enqueued here:
+      // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_robot_lib/src/sr_motor_hand_lib.cpp#L209
+      // Then a timer is set that will enqueue the pid command for the moror here:
+      // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_robot_lib/src/sr_motor_hand_lib.cpp#L223
+      // Actually two calls, one for the pids
+      // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_robot_lib/src/sr_motor_hand_lib.cpp#L284
+      // one for the backlash compensation:
+      // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_robot_lib/src/sr_motor_hand_lib.cpp#L301
+
+
+      // The queue is dealt with here. This is where the parameters are actually written to the structure "command", and sent to the 
+      // hand. The queued parameters will be sent sequentially in consecutive ethercat frames to the hand.
+      // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_robot_lib/src/sr_motor_robot_lib.cpp#L312-L467
+
+      // When the queue is empty we can set
+      // initialized_ = true;
     }
     else
     {
@@ -189,13 +225,6 @@ namespace dexterous_hand_driver
           reinterpret_cast<ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *>(this_buffer + command_size_);
     if (!initialized_)
     {
-      // TODO here we should check the values that tell us that the necessary parameters
-      // were correctly received by the hand
-
-
-      // When that happens
-      // initialized_ = true;
-
       // We don't set the values to the high_level_state_ structure during initialization
     }
     else
