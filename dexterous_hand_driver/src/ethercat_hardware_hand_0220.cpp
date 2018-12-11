@@ -35,10 +35,15 @@
 #include "dexterous_hand_driver/ethercat_hardware_hand_0220.h"
 #include "ethercat_hardware/log.h"
 
+#include <boost/pointer_cast.hpp>
+
+#define ETHERCAT_HARDWARE_HAND_0220_PRODUCT_CODE        6
+#define ETHERCAT_HARDWARE_HAND_0220_BRIDGE_PRODUCT_CODE 0
+
 namespace dexterous_hand_driver
 {
   EthercatHardwareHand0220::EthercatHardwareHand0220()
-  : EthercatHardware::EthercatHardware("enp0s25", false) // eth port name will be read in initialize, not set in constructor
+  : EthercatHardware::EthercatHardware("enp0s25", false) // TODO eth port name will be read in initialize, not set in constructor
   {
 
   }
@@ -50,7 +55,7 @@ namespace dexterous_hand_driver
 
   bool EthercatHardwareHand0220::initializeHand0220()
   {
-    // Read relevant configuration (from file for the moment)
+    // TODO Read relevant configuration (from file for the moment)
 
     if (!interface_.empty())
     {
@@ -60,6 +65,20 @@ namespace dexterous_hand_driver
     {
       ROS_DEBUG("No ethercat interface given. EthercatHardware will not be initialized");
     }
+
+    hand_driver_ = boost::dynamic_pointer_cast<HandDriver0220> (findHand());
+
+    command_.hand_1 = hand_driver_->getCommandStruct();
+    state_.hand_1 = hand_driver_->getStateStruct();
+
+    bool hand_initialized = false;
+    while(!hand_driver_->initialized())
+    {
+      sendAndReceiveFromHand0220();
+      usleep(1000);
+    }
+
+    return true; // Maybe there should be a timeout
   }
 
   boost::shared_ptr<EthercatDevice> EthercatHardwareHand0220::configSlave(EtherCAT_SlaveHandler *sh)
@@ -70,7 +89,7 @@ namespace dexterous_hand_driver
     uint32_t revision = sh->get_revision();
     unsigned slave = sh->get_station_address() - 1;
 
-    if (product_code == 6)
+    if (product_code == ETHERCAT_HARDWARE_HAND_0220_PRODUCT_CODE)
     {
       p.reset(new HandDriver0220());
     }
@@ -87,8 +106,29 @@ namespace dexterous_hand_driver
     return p;
   }
 
-  bool EthercatHardwareHand0220::sendAndReceiveFromHand0220(unsigned char *command_buffer /* this will be a struct */, unsigned char *status_buffer /* this will be a struct */)
+  boost::shared_ptr<EthercatDevice> EthercatHardwareHand0220::findHand()
+  {
+    for (unsigned int s = 0; s < slaves_.size(); ++s)
+    {
+      if (slaves_[s]->sh_->get_product_code() == ETHERCAT_HARDWARE_HAND_0220_PRODUCT_CODE) // TODO currently this can only deal with one hand per ethercat bus
+      {
+        return slaves_[s];
+      }
+    }
+  }
+
+  bool EthercatHardwareHand0220::sendAndReceiveFromHand0220()
   {
     update();
+  }
+
+  EthercatHand0220Command* EthercatHardwareHand0220::getCommandStruct()
+  {
+    return &command_;
+  }
+
+  EthercatHand0220State* EthercatHardwareHand0220::getStateStruct()
+  {
+    return &state_;
   }
 }
