@@ -1,0 +1,380 @@
+ffj0:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 500
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+ffj3:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 450
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+ffj4:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 350
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+lfj0:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 500
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+lfj3:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 450
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+lfj4:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 350
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+lfj5:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 500
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 450
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+mfj0:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 500
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+mfj3:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 450
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+mfj4:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 350
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+rfj0:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 700
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 500
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+rfj3:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 450
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+rfj4:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 350
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+thj1:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 500
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 400
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+thj2:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 500
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 400
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+thj3:
+  backlash_compensation: true
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 350
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+thj4:
+  backlash_compensation: false
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 8200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 150
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+thj5:
+  backlash_compensation: false
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 400
+    p: 8200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 150
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+wrj1:
+  backlash_compensation: false
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 600
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 200
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05
+wrj2:
+  backlash_compensation: false
+  pid:
+    d: 0
+    deadband: 5
+    f: 300
+    i: 0
+    imax: 0
+    max_pwm: 500
+    p: 6200
+    sg_left: 0
+    sg_right: 0
+    sgleftref: 0
+    sgrightref: 0
+    sign: 0
+    torque_limit: 150
+    torque_limiter_gain: 64
+  pos_filter:
+    tau: 0.05

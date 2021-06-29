@@ -34,41 +34,40 @@
 
 #include "dexterous_hand_driver/ethercat_bridge_driver.h"
 
-#include <sstream>
 #include <iomanip>
+#include <sstream>
 
 #include "ethercat_hardware/log.h"
 
-#define ETHERCAT_STATUS_DATA_SIZE sizeof(ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS)
-#define ETHERCAT_COMMAND_DATA_SIZE sizeof(ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND)
+#define ETHERCAT_STATUS_DATA_SIZE \
+  sizeof(ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS)
+#define ETHERCAT_COMMAND_DATA_SIZE \
+  sizeof(ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND)
 
 #define ETHERCAT_CAN_BRIDGE_DATA_SIZE sizeof(ETHERCAT_CAN_BRIDGE_DATA)
 
-#define ETHERCAT_COMMAND_DATA_ADDRESS                   PALM_0200_ETHERCAT_COMMAND_DATA_ADDRESS
-#define ETHERCAT_STATUS_DATA_ADDRESS                    PALM_0200_ETHERCAT_STATUS_DATA_ADDRESS
-#define ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS        PALM_0200_ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS
-#define ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS         PALM_0200_ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS
+#define ETHERCAT_COMMAND_DATA_ADDRESS PALM_0200_ETHERCAT_COMMAND_DATA_ADDRESS
+#define ETHERCAT_STATUS_DATA_ADDRESS PALM_0200_ETHERCAT_STATUS_DATA_ADDRESS
+#define ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS \
+  PALM_0200_ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS
+#define ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS \
+  PALM_0200_ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS
 
-namespace dexterous_hand_driver
-{
-  EthercatBridgeDriver::EthercatBridgeDriver()
-  {
-  }
+namespace dexterous_hand_driver {
+EthercatBridgeDriver::EthercatBridgeDriver() {}
 
-  void EthercatBridgeDriver::construct(EtherCAT_SlaveHandler *sh, int &start_address)
-  {
-    EthercatDevice::construct(sh, start_address);
+void EthercatBridgeDriver::construct(EtherCAT_SlaveHandler *sh,
+                                     int &start_address) {
+  EthercatDevice::construct(sh, start_address);
 
-    ROS_INFO("Shadow Bridge configure -  %d @ %d", sh_->get_product_code(), sh_->get_ring_position());
-  }
-
-  void EthercatBridgeDriver::packCommand(unsigned char *buffer)
-  {
-
-  }
-
-  bool EthercatBridgeDriver::unpackState(unsigned char *this_buffer, unsigned char *prev_buffer)
-  {
-
-  }
+  SHADOWHAND_INFO("Shadow Bridge configure -  %d @ %d", sh_->get_product_code(),
+                  sh_->get_ring_position());
 }
+
+void EthercatBridgeDriver::packCommand(unsigned char *buffer) {}
+
+bool EthercatBridgeDriver::unpackState(unsigned char *this_buffer,
+                                       unsigned char *prev_buffer) {
+  return true;
+}
+}  // namespace dexterous_hand_driver

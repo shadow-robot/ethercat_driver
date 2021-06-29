@@ -7,7 +7,7 @@ To build and install:
 ```
 # mkdir build
 # cd build
-# cmake ..
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME} ..
 # make
-# sudo make install
+# make install
 ```

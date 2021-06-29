@@ -6,15 +6,15 @@ To build and install:
 ```
 # mkdir build
 # cd build
-# cmake ..
+# cmake -DCMAKE_INSTALL_PREFIX:PATH=${HOME} ..
 # make
-# sudo make install
+# make install
 ```
 
 To run the driver
 
 ```
 sudo -s
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${HOME}/lib:$LD_LIBRARY_PATH
 dexterous_hand_driver_0220
 ```

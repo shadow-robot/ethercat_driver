@@ -35,38 +35,32 @@
 #ifndef ETHERNET_INTERFACE_INFO_H
 #define ETHERNET_INTERFACE_INFO_H
 
-#include <string>
 #include <stdint.h>
+#include <string>
 
-struct EthtoolStats
-{
+struct EthtoolStats {
   EthtoolStats();
   uint64_t rx_errors_;
   uint64_t rx_crc_errors_;
   uint64_t rx_frame_errors_;
   uint64_t rx_align_errors_;
 
-  EthtoolStats& operator-=(const EthtoolStats& right);
+  EthtoolStats &operator-=(const EthtoolStats &right);
 };
 
-struct InterfaceState
-{
-  InterfaceState() :
-    up_(false), running_(false)
-  {
-  }
+struct InterfaceState {
+  InterfaceState() : up_(false), running_(false) {}
   bool up_;
   bool running_;
 };
 
-class EthernetInterfaceInfo
-{
-public:
+class EthernetInterfaceInfo {
+ public:
   EthernetInterfaceInfo();
   void initialize(const std::string &interface);
   ~EthernetInterfaceInfo();
 
-protected:
+ protected:
   //! Get ethtool stats from interface
   bool getEthtoolStats(EthtoolStats &stats);
 
@@ -83,7 +77,8 @@ protected:
   char *ethtool_stats_buf_;
 
   // Indexes of statistics that come from ethtool ioctl
-  // An index of -1 indicates that statistic is not available from network driver
+  // An index of -1 indicates that statistic is not available from network
+  // driver
   int rx_error_index_;
   int rx_crc_error_index_;
   int rx_frame_error_index_;
@@ -97,4 +92,4 @@ protected:
   InterfaceState last_state_;
 };
 
-#endif //ETHERNET_INTERFACE_INFO_H
+#endif  // ETHERNET_INTERFACE_INFO_H
