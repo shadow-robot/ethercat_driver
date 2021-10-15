@@ -29,9 +29,9 @@ add_library(eml STATIC IMPORTED)
 
 set_property(TARGET eml PROPERTY IMPORTED_LOCATION $ENV{HOME}/lib/libeml.so)
 
-add_library(yaml STATIC IMPORTED)
+#add_library(yaml STATIC IMPORTED)
 
-set_property(TARGET yaml PROPERTY IMPORTED_LOCATION $ENV{HOME}/lib/libyaml.so)
+#set_property(TARGET yaml PROPERTY IMPORTED_LOCATION $ENV{HOME}/lib/libyaml.so)
 
 add_library(${PROJECT_NAME}_interface SHARED
     src/hand_interface.cpp
