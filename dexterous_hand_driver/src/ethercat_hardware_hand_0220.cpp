@@ -51,7 +51,7 @@ limitations under the License.
 
 #include <boost/pointer_cast.hpp>
 
-#define ETHERCAT_HARDWARE_HAND_0220_PRODUCT_CODE 6
+#define ETHERCAT_HARDWARE_HAND_0220_PRODUCT_CODE 9
 #define ETHERCAT_HARDWARE_HAND_0220_BRIDGE_PRODUCT_CODE 0
 
 namespace dexterous_hand_driver {
@@ -95,7 +95,9 @@ boost::shared_ptr<EthercatDevice> EthercatHardwareHand0220::configSlave(
     EtherCAT_SlaveHandler* sh) {
   boost::shared_ptr<EthercatDevice> p;
   unsigned product_code = sh->get_product_code();
+  std::cout<<"Product code: "<<product_code<<std::endl;
   unsigned serial = sh->get_serial();
+  std::cout<<"Serial: "<<serial<<std::endl;
   uint32_t revision = sh->get_revision();
   unsigned slave = sh->get_station_address() - 1;
 

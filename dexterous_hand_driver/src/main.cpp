@@ -58,9 +58,10 @@ int main(int argc, char* argv[]) {
   int flags, opt;
   int motor_index = 0;
   double computed_command = 0;
-  bool use_pwm = false;
-  bool demo = false;
-  string ether_interface = "enx00e04c68c394";
+  int loop_counter = 0;
+  bool use_pwm = true;
+  bool demo = true;
+  string ether_interface = "enp5s0";
   string motor_board_effort_controller_file =
       "../src/motor_board_effort_controllers.yaml";
   string position_controller_file =
@@ -108,6 +109,7 @@ int main(int argc, char* argv[]) {
   dexterous_hand_driver::EthercatHand0220State* state = hand.getStateStruct();
 
   while (1) {
+    loop_counter++;
     // Here "command" structure will contain the last command that was written
     // this should be OK, as it is equivalent to not sending a new etherCAT
     // frame (by default the motor controller board will keep applying the
@@ -124,40 +126,43 @@ int main(int argc, char* argv[]) {
 
     // Write your command data to structure "command"
     if (demo) {
-      command->hand_1->use_pwm = false;
-      command->hand_1->pwm_command[11] = -100.0;
-      command->hand_1->pwm_command[3] = 150.0;
-    } else {
-      command->hand_1->use_pwm = use_pwm;
-      if (motor_index == -1) {
-        if (use_pwm) {
-          for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-            command->hand_1->pwm_command[i] = computed_command;
-          }
-        } else {
-          for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-            command->hand_1->torque_command[i] = computed_command;
-          }
-        }
-      } else {
-        if (use_pwm) {
-          for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-            if (i == motor_index) {
-              command->hand_1->pwm_command[motor_index] = computed_command;
-            } else {
-              auto& mj_map = hand.getMotorsToJointsMap();
-              auto mj = mj_map.find(i);
-              int joint_id =
-                  hand.getJointToCalibratedIdMap().find(mj->second)->second;
-              command->hand_1->pwm_command[i] =
-                  state->hand_1->calibrated_position[joint_id];
-            }
-          }
-        } else {
-          command->hand_1->torque_command[motor_index] = computed_command;
-        }
-      }
-    }
+      command->hand_1->use_pwm = true;
+      // for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i)
+      // {
+      //   std::cout<<"Motor: "<<i<<" command: "<<command->hand_1->pwm_command[i]<<std::endl;
+      // }
+      //command->hand_1->pwm_command[0] = 0.0;
+      command->hand_1->pwm_command[1] = -200.0;
+    } //else {
+    //   command->hand_1->use_pwm = use_pwm;
+    //   if (motor_index == -1) {
+    //     if (use_pwm) {
+    //       for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
+    //         command->hand_1->pwm_command[i] = computed_command;
+    //       }
+    //     } else {
+    //       for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
+    //         command->hand_1->torque_command[i] = computed_command;
+    //       }
+    //     }
+    //   } else {
+    //     if (use_pwm) {
+    //       for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
+    //         if (i == motor_index) {
+    //           command->hand_1->pwm_command[motor_index] = computed_command;
+    //         } else {
+    //           auto& mj_map = hand.getMotorsToJointsMap();
+    //           auto mj = mj_map.find(i);
+    //           int joint_id =
+    //               hand.getJointToCalibratedIdMap().find(mj->second)->second;
+    //           command->hand_1->pwm_command[i] = state->hand_1->calibrated_position[joint_id];
+    //         }
+    //       }
+    //     } else {
+    //       command->hand_1->torque_command[motor_index] = computed_command;
+    //     }
+    //   }
+    // }
 
     // wait until 1ms has passed since last call to sendAndReceiveFromHand0220()
     usleep(1000);  // Don't do it like this (take the time of the system to
@@ -174,6 +179,10 @@ int main(int argc, char* argv[]) {
 
     hand.sendAndReceiveFromHand0220();
 
+    for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i)
+    {
+      std::cout<<"Motor: "<<i<<" command: "<<command->hand_1->pwm_command[i]<<std::endl;
+    }
     // The following section is recommended to guarantee that the slow sensor
     // data fields are as fresh as they can be e.g. most of the biotac data
     // fields are polled only once every 14 frames so we should prefer not to

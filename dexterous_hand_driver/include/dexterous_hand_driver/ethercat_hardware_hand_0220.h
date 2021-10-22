@@ -73,7 +73,7 @@ struct EthercatHand0220State {
 
 class EthercatHardwareHand0220 : public EthercatHardware {
  public:
-  EthercatHardwareHand0220(const string& interface = "enx00e04c68c394");
+  EthercatHardwareHand0220(const string& interface = "enp5s0");
   virtual ~EthercatHardwareHand0220();
 
   // Initializes the hand. This will perform etherCAT initialization of all the

@@ -416,6 +416,11 @@ typedef struct {
 //    #error Not enough sensors[] in
 //    ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS
 //#endif
+typedef struct
+{
+  int16u command;
+  int8u  argument[2];
+} IMU_COMMAND_TYPE;
 
 //! These are the data sent from the Palm to the host.
 typedef struct {
@@ -468,7 +473,7 @@ typedef struct {
                                   //!< torque/PWM demands, or configs.
 
   int32u tactile_data_type;  //!< Request for specific tactile data
-
+  IMU_COMMAND_TYPE            imu_command;                        // Command to configure the IMU
 } __attribute__((packed)) ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_COMMAND;
 
 /*
@@ -494,7 +499,7 @@ What's the minimum amount of
 #define ETHERCAT_STATUS_AGREED_SIZE \
   232  //! This is the size of the Status  EtherCAT packet (Status + CAN packet)
 #define ETHERCAT_COMMAND_AGREED_SIZE \
-  70  //! This is the size of the Command EtherCAT packet (Status + CAN packet)
+  74  //! This is the size of the Command EtherCAT packet (Status + CAN packet)
 
 //! | ETHERCAT_COMMAND_DATA | ETHERCAT_CAN_BRIDGE_DATA_COMMAND |
 //! ETHERCAT_STATUS_DATA | ETHERCAT_CAN_BRIDGE_DATA_STATUS | | | | | | | |

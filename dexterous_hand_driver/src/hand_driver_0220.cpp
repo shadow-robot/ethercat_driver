@@ -517,7 +517,6 @@ void HandDriver0220::sendReset(
     } else {
       to_send.byte[0] = motor_id;
     }
-
     command->motor_data[motor_id] = to_send.word;
   }
 }

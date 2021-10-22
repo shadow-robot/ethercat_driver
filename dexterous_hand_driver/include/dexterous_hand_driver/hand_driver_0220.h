@@ -95,7 +95,7 @@ struct BiotacData {
 struct Hand0220Command {
   bool use_pwm;
   std::array<double, HAND_DRIVER_0220_NB_MOTORS> pwm_command = {
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
   std::array<int, HAND_DRIVER_0220_NB_MOTORS> torque_command = {
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 };
