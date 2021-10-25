@@ -128,7 +128,7 @@ boost::shared_ptr<EthercatDevice> EthercatHardwareHand0220::findHand() {
   }
 }
 
-bool EthercatHardwareHand0220::sendAndReceiveFromHand0220() { update(); }
+void EthercatHardwareHand0220::sendAndReceiveFromHand0220() { update(); }
 
 EthercatHand0220Command* EthercatHardwareHand0220::getCommandStruct() {
   return &command_;

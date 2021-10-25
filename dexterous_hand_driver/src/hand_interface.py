@@ -167,7 +167,7 @@ class ShadowHandRobot():
     """
     self.run_loop(commands=reset_pose.tolist(), use_position=True, duration=2.0)
 
-  def hand_init(self, initial_positions=None, port="enx00e04c68c394"):
+  def hand_init(self, initial_positions=None, port="enp5s0"):
     """Initializes the hand.
 
     Args:

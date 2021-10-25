@@ -638,8 +638,8 @@ void HandDriver0220::convertCommand(
   if (high_level_command->use_pwm) {
     command->to_motor_data_type = MOTOR_DEMAND_PWM;
     for (auto &joint : joints_vector_) {
-      command->motor_data[joint.motor_id_] = convertFromPositionToPwmCommand(
-          joint, high_level_command->pwm_command[joint.motor_id_], period);
+      command->motor_data[joint.motor_id_] = high_level_command->pwm_command[joint.motor_id_]; //convertFromPositionToPwmCommand(
+          //joint, high_level_command->pwm_command[joint.motor_id_], period);
       SHADOWHAND_DEBUG("Setting pwm[%d] to %d\n", joint.motor_id_,
                        command->motor_data[joint.motor_id_]);
     }
@@ -812,6 +812,29 @@ void HandDriver0220::convertTactileData(
   }
 }
 
+void HandDriver0220::convertStrainGaugesData(
+    ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data,
+    Hand0220State *high_level_state)
+{
+  // fill up high level state with even motors
+  if (state_data->which_motors == 0)
+  {
+    // even motors
+    for (int i = 0; i < 10; ++i) 
+    {
+      high_level_state->strain_gauges_data[i*2] = state_data->motor_data_packet[i].torque;
+    }
+  }
+  else if (state_data->which_motors == 1)   // fill with odd motors
+  {
+    for (int i = 0; i < 10; ++i)
+    {
+      int index = i + (i+1);
+      high_level_state->strain_gauges_data[index] = state_data->motor_data_packet[i].torque;
+    }
+  }
+}
+
 bool HandDriver0220::convertState(
     ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data) {
   Hand0220State *high_level_state = getStateStruct();
@@ -855,12 +878,13 @@ bool HandDriver0220::convertState(
                    state_data->which_motor_data_arrived);
   SHADOWHAND_DEBUG("which_motor_data_had_errors = %d\n",
                    state_data->which_motor_data_had_errors);
-  for (int i = 0; i < 10; ++i) {
-    SHADOWHAND_DEBUG("motor_data_packet[%d].torque = %d\n", i,
-                     state_data->motor_data_packet[i].torque);
-    SHADOWHAND_DEBUG("motor_data_packet[%d].misc = %d\n", i,
-                     state_data->motor_data_packet[i].misc);
+  for (int i = 0; i < 10; ++i) 
+  {
+    SHADOWHAND_DEBUG("motor_data_packet[%d].torque = %d\n", i, state_data->motor_data_packet[i].torque);
+    SHADOWHAND_DEBUG("motor_data_packet[%d].misc = %d\n", i, state_data->motor_data_packet[i].misc);
   }
+
+  convertStrainGaugesData(state_data, high_level_state);
 
   return true;
 }

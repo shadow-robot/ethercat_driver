@@ -49,31 +49,36 @@ limitations under the License.
 #include <getopt.h>
 #include <stdio.h>
 #include <unistd.h>
-
+#include <chrono>
 #include "dexterous_hand_driver/ethercat_hardware_hand_0220.h"
 
 #define NB_IDLE_FRAMES 9
 
+void send_pwm_command(int motor_index, int pwm_command, int duration)
+{
+
+}
+
 int main(int argc, char* argv[]) {
   int flags, opt;
   int motor_index = 0;
-  double computed_command = 0;
-  int loop_counter = 0;
   bool use_pwm = true;
-  bool demo = true;
+  bool execute_commands = false;
+  int pwm_command = 0;
+  bool read_hand_data = false;
   string ether_interface = "enp5s0";
   string motor_board_effort_controller_file =
       "../src/motor_board_effort_controllers.yaml";
   string position_controller_file =
       "../src/sr_edc_joint_position_controllers_PWM.yaml";
 
-  while ((opt = getopt(argc, argv, "dpe:i:v:f:")) != -1) {
+  while ((opt = getopt(argc, argv, "c:r:i:v:f:")) != -1) {
     switch (opt) {
-      case 'd':
-        demo = true;
+      case 'c':
+        execute_commands = true;
         break;
-      case 'p':
-        use_pwm = true;
+      case 'r':
+        read_hand_data = true;
         break;
       case 'e':
         ether_interface.assign(optarg);
@@ -84,12 +89,9 @@ int main(int argc, char* argv[]) {
       case 'f':
         motor_board_effort_controller_file.assign(optarg);
         break;
-      case 'v':
-        computed_command = atof(optarg);
-        break;
       default:
         fprintf(stderr,
-                "Usage: %s [-dp] [-i index] [-v value] [-e interface]\n",
+                "Usage: %s [-cr] [-i index] [-v value] [-e interface]\n",
                 argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -108,91 +110,134 @@ int main(int argc, char* argv[]) {
       hand.getCommandStruct();
   dexterous_hand_driver::EthercatHand0220State* state = hand.getStateStruct();
 
+  
   while (1) {
-    loop_counter++;
-    // Here "command" structure will contain the last command that was written
-    // this should be OK, as it is equivalent to not sending a new etherCAT
-    // frame (by default the motor controller board will keep applying the
-    // latest received motor command if the communication is interrupted, until
-    // a 50ms timeout is triggered, that will make the motor controller set the
-    // command value to zero as a protection mechanism)
-    hand.sendAndReceiveFromHand0220();
-    // Here "state" structure contains the latest sensor data received from the
-    // hand
-
-    // Do something here with "state" data to compute the next command data
-    // int first_raw_sensor = state->hand_1->raw_position[0]; // Whatever. e.g
-    // read the value from the first raw sensor
-
-    // Write your command data to structure "command"
-    if (demo) {
-      command->hand_1->use_pwm = true;
-      // for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i)
-      // {
-      //   std::cout<<"Motor: "<<i<<" command: "<<command->hand_1->pwm_command[i]<<std::endl;
-      // }
-      //command->hand_1->pwm_command[0] = 0.0;
-      command->hand_1->pwm_command[1] = -200.0;
-    } //else {
-    //   command->hand_1->use_pwm = use_pwm;
-    //   if (motor_index == -1) {
-    //     if (use_pwm) {
-    //       for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-    //         command->hand_1->pwm_command[i] = computed_command;
-    //       }
-    //     } else {
-    //       for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-    //         command->hand_1->torque_command[i] = computed_command;
-    //       }
-    //     }
-    //   } else {
-    //     if (use_pwm) {
-    //       for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-    //         if (i == motor_index) {
-    //           command->hand_1->pwm_command[motor_index] = computed_command;
-    //         } else {
-    //           auto& mj_map = hand.getMotorsToJointsMap();
-    //           auto mj = mj_map.find(i);
-    //           int joint_id =
-    //               hand.getJointToCalibratedIdMap().find(mj->second)->second;
-    //           command->hand_1->pwm_command[i] = state->hand_1->calibrated_position[joint_id];
-    //         }
-    //       }
-    //     } else {
-    //       command->hand_1->torque_command[motor_index] = computed_command;
-    //     }
-    //   }
-    // }
-
-    // wait until 1ms has passed since last call to sendAndReceiveFromHand0220()
-    usleep(1000);  // Don't do it like this (take the time of the system to
-                   // account for last sending time instead)
-    for (int i = 0; i < HAND_DRIVER_0220_NB_RAW_SENSORS; ++i) {
-      printf("sensor[%d] %s = %d\n", i, sensor_names[i],
-             state->hand_1->raw_position[i]);
-    }
-    for (int i = 0; i < HAND_DRIVER_0220_NB_ALL_JOINTS; ++i) {
-      printf("joint[%d] %s calibrated_position = %f\n", i,
-             hand.getCalibratedIdToJointMap().find(i)->second.c_str(),
-             state->hand_1->calibrated_position[i]);
-    }
-
-    hand.sendAndReceiveFromHand0220();
-
-    for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i)
+    if (execute_commands == true)
     {
-      std::cout<<"Motor: "<<i<<" command: "<<command->hand_1->pwm_command[i]<<std::endl;
+      cout << "Insert index of motor you want to control:\n";
+      cout << "[FFJ0 - 0   | FFJ3 - 1  | FFJ4 - 2 ]\n";
+      cout << "[MFJ0 - 3   | MFJ3 - 11 | MFJ4 - 13]\n";
+      cout << "[RFJ0 - 15  | RFJ3 - 16 | RFJ4 - 17]\n";
+      cout << "[LFJ0 - 12  | LFJ3 - 10 | LFJ4 - 14 | LFJ5 - 4]\n";
+      cout << "[THJ1 - 6   | THJ2 - 5  | THJ3 - 7  | THJ4 - 9 | THJ5 - 19]\n";
+      cout << "[WRJ1 - 18  | WRJ2 - 8]\n";
+      cin >> motor_index;
+      cout << "Insert pwm command to send to the motor (+ or - for direction, max 500): ";
+      cin >> pwm_command;
+      auto start = std::chrono::steady_clock::now();
+      bool executing_pwm_command = true;
+
+      while (executing_pwm_command == true)
+      {
+        if (std::chrono::steady_clock::now() - start > std::chrono::seconds(5))
+        {
+          executing_pwm_command = false;
+          break;
+        }
+        // Here "command" structure will contain the last command that was written
+        // this should be OK, as it is equivalent to not sending a new etherCAT
+        // frame (by default the motor controller board will keep applying the
+        // latest received motor command if the communication is interrupted, until
+        // a 50ms timeout is triggered, that will make the motor controller set the
+        // command value to zero as a protection mechanism)
+        hand.sendAndReceiveFromHand0220();
+        
+        // Here "state" structure contains the latest sensor data received from the
+        // hand
+        // Do something here with "state" data to compute the next command data
+        // int first_raw_sensor = state->hand_1->raw_position[0]; // Whatever. e.g
+        // read the value from the first raw sensor
+
+        // Write your command data to structure "command"
+        cout<<"Sending: "<<pwm_command<<" to motor: "<<motor_index<<"...\n";
+        command->hand_1->use_pwm = true;
+        command->hand_1->pwm_command[motor_index] = pwm_command;
+
+        hand.sendAndReceiveFromHand0220();
+  
+        usleep(1000);
+      }
     }
-    // The following section is recommended to guarantee that the slow sensor
-    // data fields are as fresh as they can be e.g. most of the biotac data
-    // fields are polled only once every 14 frames so we should prefer not to
-    // skip any frame and send one every 1ms even if we don't recompute the
-    // motor command. Sending the latest motor command computed will have the
-    // same effect as not sending a frame (see above)
-    for (int i; i < NB_IDLE_FRAMES; i++) {
-      usleep(1000);
-      hand.sendAndReceiveFromHand0220();
+    else if (read_hand_data == true)
+    {
+      std::string data_type;
+      int read_duration;
+      cout << "Select data you want to read\n";
+      cout << "- RP for raw position\n";
+      cout << "- I for imu\n";
+      cout << "- CP for calibrated position\n";
+      cout << "- SG for strain gauges\n";
+      cin >> data_type;
+      cout << "Insert data read duration in seconds: (0 for infinite read)\n";
+      cin >> read_duration;
+      auto start = std::chrono::steady_clock::now();
+      bool reading_data = true;
+
+      while (reading_data == true)
+      {
+        if (read_duration > 0)
+        {
+          if (std::chrono::steady_clock::now() - start > std::chrono::seconds(read_duration))
+          {
+            reading_data = false;
+            break;
+          }
+        }
+        // wait until 1ms has passed since last call to sendAndReceiveFromHand0220()
+        usleep(1000);  // Don't do it like this (take the time of the system to
+                      // account for last sending time instead)
+        hand.sendAndReceiveFromHand0220();
+        if (data_type == "RP")
+        {
+          for (int i = 0; i < HAND_DRIVER_0220_NB_RAW_SENSORS - HAND_DRIVER_0220_IMU_FIELDS; ++i) {
+            printf("sensor[%d] %s = %d\n", i, sensor_names[i],
+                  state->hand_1->raw_position[i]);
+          }
+        }
+        else if (data_type == "I")
+        {
+            for (int i = HAND_DRIVER_0220_NB_RAW_SENSORS - HAND_DRIVER_0220_IMU_FIELDS; i < HAND_DRIVER_0220_NB_RAW_SENSORS; ++i) {
+            printf("sensor[%d] %s = %d\n", i, sensor_names[i],
+                  state->hand_1->raw_position[i]);
+          }
+        }
+        else if (data_type == "CP")
+        {
+          for (int i = 0; i < HAND_DRIVER_0220_NB_ALL_JOINTS; ++i) {
+            printf("joint[%d] %s calibrated_position = %f\n", i,
+                  hand.getCalibratedIdToJointMap().find(i)->second.c_str(),
+                  state->hand_1->calibrated_position[i]);
+          }
+        }
+        else if (data_type == "SG")
+        {
+          for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
+              printf("motor_data_packet[%d].torque = %d\n", i,
+                      state->hand_1->strain_gauges_data[i]);
+            }
+        }
+        else
+        {
+          std:cout<<"Type of data not recognized, insert a correct flag to read the data\n";
+          read_hand_data = false;
+          break;
+        }
+
+        hand.sendAndReceiveFromHand0220();
+
+        // The following section is recommended to guarantee that the slow sensor
+        // data fields are as fresh as they can be e.g. most of the biotac data
+        // fields are polled only once every 14 frames so we should prefer not to
+        // skip any frame and send one every 1ms even if we don't recompute the
+        // motor command. Sending the latest motor command computed will have the
+        // same effect as not sending a frame (see above)
+        for (int i; i < NB_IDLE_FRAMES; i++) {
+          usleep(1000);
+          hand.sendAndReceiveFromHand0220();
+        }
+        usleep(1000);
+
+      }
     }
-    usleep(1000);
   }
 }

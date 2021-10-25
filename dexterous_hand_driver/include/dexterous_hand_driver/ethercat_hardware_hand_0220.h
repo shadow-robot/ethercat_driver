@@ -84,7 +84,7 @@ class EthercatHardwareHand0220 : public EthercatHardware {
           "sr_edc_joint_position_controllers_PWM.yaml");
 
   // Sends commands and receives statuses from the hand.
-  bool sendAndReceiveFromHand0220();
+  void sendAndReceiveFromHand0220();
 
   void setCommandForHand0220(
       unsigned char* command_buffer /* this will be a struct */);
