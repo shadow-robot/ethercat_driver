@@ -142,9 +142,18 @@ static const char* joint_names[JOINTS_NUM_0X20] = {
 
 // From
 // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_edc_launch/mappings/default_mappings/rh_E_v3.yaml
+/*
 static int motor_ids[JOINTS_NUM_0X20] = {0,  -1, -1, 1,  2,  3,  -1, -1, 11, 13,
                                          15, -1, -1, 16, 17, 12, -1, -1, 10, 14,
                                          4,  6,  5,  7,  9,  19, 18, 8};
+
+*/
+
+// lh_E_v4
+static int motor_ids[JOINTS_NUM_0X20] = {12,  -1, -1, 14,  13,  10,  -1, -1, 0, 11,
+                                         1, -1, -1, 4, 7, 2, -1, -1, 3, 6,
+                                         5,  17,  16,  15,  19,  9, 18, 8};
+
 
 //! This array defines the names of the joints. The names and order should match
 //! the enum SENSOR_NAMES_ENUM.

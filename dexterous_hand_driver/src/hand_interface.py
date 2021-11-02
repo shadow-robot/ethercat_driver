@@ -61,6 +61,8 @@ class Hand0220State(ctypes.Structure):
 class ShadowHandRobot():
   # Joint name to hardware motor ID map. A value of -1 means the joint cannot be
   # independently controlled.
+  # rh_E_v3
+  '''
   _JOINTS_TO_MOTORS_MAP = {
       "FFJ0" : 0,
       "FFJ1" : -1,
@@ -88,6 +90,38 @@ class ShadowHandRobot():
       "THJ3" : 7,
       "THJ4" : 9,
       "THJ5" : 19,
+      "WRJ1" : 18,
+      "WRJ2" : 8,
+  }
+  '''
+  # lh_E_v4
+  _JOINTS_TO_MOTORS_MAP = {
+      "FFJ0" : 12,
+      "FFJ1" : -1,
+      "FFJ2" : -1,
+      "FFJ3" : 14,
+      "FFJ4" : 13,
+      "MFJ0" : 10,
+      "MFJ1" : -1,
+      "MFJ2" : -1,
+      "MFJ3" : 0,
+      "MFJ4" : 11,
+      "RFJ0" : 1,
+      "RFJ1" : -1,
+      "RFJ2" : -1,
+      "RFJ3" : 4,
+      "RFJ4" : 7,
+      "LFJ0" : 2,
+      "LFJ1" : -1,
+      "LFJ2" : -1,
+      "LFJ3" : 3,
+      "LFJ4" : 6,
+      "LFJ5" : 5,
+      "THJ1" : 17,
+      "THJ2" : 16,
+      "THJ3" : 15,
+      "THJ4" : 19,
+      "THJ5" : 9,
       "WRJ1" : 18,
       "WRJ2" : 8,
   }
@@ -167,7 +201,7 @@ class ShadowHandRobot():
     """
     self.run_loop(commands=reset_pose.tolist(), use_position=True, duration=2.0)
 
-  def hand_init(self, initial_positions=None, port="enp5s0"):
+  def hand_init(self, initial_positions=None, port="enx00e04c706b17"):
     """Initializes the hand.
 
     Args:
