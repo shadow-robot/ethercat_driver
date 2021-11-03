@@ -66,7 +66,7 @@ def main():
                       help="Comma separated map from joint_name to command")
   parser.add_argument("--torque_duration", type=float, default=5.0,
                       help="How long to run a torque command")
-  parser.add_argument("--pwm_duration", type=float, default=1.0,
+  parser.add_argument("--pwm_duration", type=float, default=5.0,
                       help="How long to run a position command")
   parser.add_argument("--run_forever", action="store_true", default=False,
                       help="Whether or not to run forever")

@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
   bool execute_commands = false;
   int pwm_command = 0;
   bool read_hand_data = false;
-  string ether_interface = "enp5s0";
+  string ether_interface = "enx00e04c706b17";
   string motor_board_effort_controller_file =
       "../src/motor_board_effort_controllers.yaml";
   string position_controller_file =
