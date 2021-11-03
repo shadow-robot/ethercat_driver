@@ -53,10 +53,19 @@ limitations under the License.
 #include "dexterous_hand_driver/ethercat_hardware_hand_0220.h"
 
 #define NB_IDLE_FRAMES 9
+#define YELLOW  "\033[33m"      /* Yellow */
 
-void send_pwm_command(int motor_index, int pwm_command, int duration)
+static const int SEC_2_NSEC = 1e+9;
+
+
+static void timespecInc(struct timespec &tick, int nsec)
 {
-
+  tick.tv_nsec += nsec;
+  while (tick.tv_nsec >= SEC_2_NSEC)
+  {
+    tick.tv_nsec -= SEC_2_NSEC;
+    ++tick.tv_sec;
+  }
 }
 
 int main(int argc, char* argv[]) {
@@ -66,19 +75,25 @@ int main(int argc, char* argv[]) {
   bool execute_commands = false;
   int pwm_command = 0;
   bool read_hand_data = false;
+  bool run_all = false;
+  int counter = 0;
+  double old_timestamp = 0;
   string ether_interface = "enp5s0";
   string motor_board_effort_controller_file =
       "../src/motor_board_effort_controllers.yaml";
   string position_controller_file =
       "../src/sr_edc_joint_position_controllers_PWM.yaml";
 
-  while ((opt = getopt(argc, argv, "c:r:i:v:f:")) != -1) {
+  while ((opt = getopt(argc, argv, "c:r:a:i:v:f:")) != -1) {
     switch (opt) {
       case 'c':
         execute_commands = true;
         break;
       case 'r':
         read_hand_data = true;
+        break;
+      case 'a':
+        run_all = true;
         break;
       case 'e':
         ether_interface.assign(optarg);
@@ -91,7 +106,7 @@ int main(int argc, char* argv[]) {
         break;
       default:
         fprintf(stderr,
-                "Usage: %s [-cr] [-i index] [-v value] [-e interface]\n",
+                "Usage: %s [-cra] [-i index] [-v value] [-e interface]\n",
                 argv[0]);
         exit(EXIT_FAILURE);
     }
@@ -110,7 +125,15 @@ int main(int argc, char* argv[]) {
       hand.getCommandStruct();
   dexterous_hand_driver::EthercatHand0220State* state = hand.getStateStruct();
 
-  
+  int policy;
+
+  // Set to realtime scheduler for this thread
+  struct sched_param thread_param;
+  policy = SCHED_FIFO;
+  thread_param.sched_priority = sched_get_priority_max(policy);
+  pthread_setschedparam(pthread_self(), policy, &thread_param);
+  struct timespec tick;
+
   while (1) {
     if (execute_commands == true)
     {
@@ -175,16 +198,18 @@ int main(int argc, char* argv[]) {
 
       while (reading_data == true)
       {
+        counter++;
         if (read_duration > 0)
         {
           if (std::chrono::steady_clock::now() - start > std::chrono::seconds(read_duration))
           {
             reading_data = false;
+            std::cout<<"Counter: "<<counter<<"\n";
             break;
           }
         }
         // wait until 1ms has passed since last call to sendAndReceiveFromHand0220()
-        usleep(1000);  // Don't do it like this (take the time of the system to
+        // usleep(1000);  // Don't do it like this (take the time of the system to
                       // account for last sending time instead)
         hand.sendAndReceiveFromHand0220();
         if (data_type == "RP")
@@ -225,19 +250,75 @@ int main(int argc, char* argv[]) {
 
         hand.sendAndReceiveFromHand0220();
 
-        // The following section is recommended to guarantee that the slow sensor
-        // data fields are as fresh as they can be e.g. most of the biotac data
-        // fields are polled only once every 14 frames so we should prefer not to
-        // skip any frame and send one every 1ms even if we don't recompute the
-        // motor command. Sending the latest motor command computed will have the
-        // same effect as not sending a frame (see above)
+        // // The following section is recommended to guarantee that the slow sensor
+        // // data fields are as fresh as they can be e.g. most of the biotac data
+        // // fields are polled only once every 14 frames so we should prefer not to
+        // // skip any frame and send one every 1ms even if we don't recompute the
+        // // motor command. Sending the latest motor command computed will have the
+        // // same effect as not sending a frame (see above)
         for (int i; i < NB_IDLE_FRAMES; i++) {
           usleep(1000);
           hand.sendAndReceiveFromHand0220();
         }
         usleep(1000);
+      } 
+    }
+    else if (run_all == true)
+    {
+      clock_gettime(CLOCK_REALTIME, &tick);
+      tick.tv_nsec = (tick.tv_nsec / 1000000 + 1) * 1000000;
 
-      }
+      auto start_test = std::chrono::steady_clock::now();
+      int counter = 0;
+
+      while (std::chrono::steady_clock::now() - start_test <= std::chrono::milliseconds(1))
+      {
+        counter++;
+        
+        command->hand_1->use_pwm = true;
+        command->hand_1->pwm_command[0] = 1;
+        command->hand_1->pwm_command[1] = 1;
+        command->hand_1->pwm_command[2] = 1;
+        command->hand_1->pwm_command[3] = 1;
+        command->hand_1->pwm_command[4] = 1;
+        command->hand_1->pwm_command[5] = 1;
+        command->hand_1->pwm_command[6] = 1;
+        command->hand_1->pwm_command[7] = 1;
+        command->hand_1->pwm_command[8] = 1;
+        command->hand_1->pwm_command[9] = 1;
+        command->hand_1->pwm_command[10] = 1;
+        command->hand_1->pwm_command[11] = 1;
+        command->hand_1->pwm_command[12] = 1;
+        command->hand_1->pwm_command[13] = 1;
+        command->hand_1->pwm_command[14] = 1;
+        command->hand_1->pwm_command[15] = 1;
+        command->hand_1->pwm_command[16] = 1;
+        command->hand_1->pwm_command[17] = 1;
+        command->hand_1->pwm_command[18] = 1;
+        command->hand_1->pwm_command[19] = 1;
+        command->hand_1->pwm_command[20] = 1;
+
+        hand.sendAndReceiveFromHand0220();
+
+        for (int i = 0; i < HAND_DRIVER_0220_NB_RAW_SENSORS - HAND_DRIVER_0220_IMU_FIELDS; ++i) {
+            printf("sensor[%d] %s = %d\n", i, sensor_names[i],
+                  state->hand_1->raw_position[i]);
+        }
+        for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
+              printf("motor_data_packet[%d].torque = %d\n", i,
+                      state->hand_1->strain_gauges_data[i]);
+        }
+        for (int i = HAND_DRIVER_0220_NB_RAW_SENSORS - HAND_DRIVER_0220_IMU_FIELDS; i < HAND_DRIVER_0220_NB_RAW_SENSORS; ++i) {
+            printf("sensor[%d] %s = %d\n", i, sensor_names[i],
+                  state->hand_1->raw_position[i]);
+          }
+        timespecInc(tick, 1000000);
+
+        clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
+     }
+     std::cout<<"\033[1;31mCounter\033[0m\n"<<counter<<"\n";
+     if (counter > 1)
+      break;
     }
   }
 }

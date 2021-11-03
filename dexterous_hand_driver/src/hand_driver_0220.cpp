@@ -864,7 +864,7 @@ bool HandDriver0220::convertState(
     auto mutable_joint = &joints_vector_[i];
     // TODO(sherrym): Need to verify that having pos_filter is indeed better.
     pair<double, double> pos_and_velocity = mutable_joint->pos_filter_.compute(
-        calibrated_position, high_level_state->timestamp);
+      calibrated_position, high_level_state->timestamp);
     mutable_joint->joint_state_.position_ = pos_and_velocity.first;
     mutable_joint->joint_state_.velocity_ = pos_and_velocity.second;
   }
