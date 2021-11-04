@@ -106,7 +106,8 @@ struct Hand0220State {
   std::array<double, HAND_DRIVER_0220_NB_ALL_JOINTS> calibrated_position;
   std::array<BiotacData, HAND_DRIVER_0220_NB_FINGERS> biotac_data;
   std::array<int, HAND_DRIVER_0220_NB_MOTORS> strain_gauges_data;
-  double timestamp;  // In seconds.
+  time_t timestamp_s;
+  long timestamp_ms;
 };
 
 class PositionPID {

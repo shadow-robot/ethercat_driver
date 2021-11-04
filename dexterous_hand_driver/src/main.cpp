@@ -51,9 +51,10 @@ limitations under the License.
 #include <unistd.h>
 #include <chrono>
 #include "dexterous_hand_driver/ethercat_hardware_hand_0220.h"
+#include <iostream>
+#include <fstream>
 
 #define NB_IDLE_FRAMES 9
-#define YELLOW  "\033[33m"      /* Yellow */
 
 static const int SEC_2_NSEC = 1e+9;
 
@@ -77,7 +78,7 @@ int main(int argc, char* argv[]) {
   bool read_hand_data = false;
   bool run_all = false;
   int counter = 0;
-  double old_timestamp = 0;
+  long old_timestamp_ms = 0;
   string ether_interface = "enp5s0";
   string motor_board_effort_controller_file =
       "../src/motor_board_effort_controllers.yaml";
@@ -265,16 +266,15 @@ int main(int argc, char* argv[]) {
     }
     else if (run_all == true)
     {
+      auto start_test = std::chrono::high_resolution_clock::now();
+      int counter = 0;
+      old_timestamp_ms = 0;
       clock_gettime(CLOCK_REALTIME, &tick);
       tick.tv_nsec = (tick.tv_nsec / 1000000 + 1) * 1000000;
+      clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
 
-      auto start_test = std::chrono::steady_clock::now();
-      int counter = 0;
-
-      while (std::chrono::steady_clock::now() - start_test <= std::chrono::milliseconds(1))
+      while (std::chrono::high_resolution_clock::now() - start_test <= std::chrono::milliseconds(1000))
       {
-        counter++;
-        
         command->hand_1->use_pwm = true;
         command->hand_1->pwm_command[0] = 1;
         command->hand_1->pwm_command[1] = 1;
@@ -299,26 +299,31 @@ int main(int argc, char* argv[]) {
         command->hand_1->pwm_command[20] = 1;
 
         hand.sendAndReceiveFromHand0220();
-
-        for (int i = 0; i < HAND_DRIVER_0220_NB_RAW_SENSORS - HAND_DRIVER_0220_IMU_FIELDS; ++i) {
-            printf("sensor[%d] %s = %d\n", i, sensor_names[i],
-                  state->hand_1->raw_position[i]);
+        //hand.sendAndReceiveFromHand0220();
+        // check status was updated
+        if (counter == 0)
+        {
+          counter++;
+          old_timestamp_ms = state->hand_1->timestamp_ms;
         }
-        for (int i = 0; i < HAND_DRIVER_0220_NB_MOTORS; ++i) {
-              printf("motor_data_packet[%d].torque = %d\n", i,
-                      state->hand_1->strain_gauges_data[i]);
-        }
-        for (int i = HAND_DRIVER_0220_NB_RAW_SENSORS - HAND_DRIVER_0220_IMU_FIELDS; i < HAND_DRIVER_0220_NB_RAW_SENSORS; ++i) {
-            printf("sensor[%d] %s = %d\n", i, sensor_names[i],
-                  state->hand_1->raw_position[i]);
+        else
+        {
+          if (state->hand_1->timestamp_ms - old_timestamp_ms == 1)
+          {
+            counter++;
+            old_timestamp_ms = state->hand_1->timestamp_ms;
           }
+          else
+          {
+            old_timestamp_ms = state->hand_1->timestamp_ms - 1;
+          }
+        }
+
         timespecInc(tick, 1000000);
 
         clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &tick, NULL);
      }
-     std::cout<<"\033[1;31mCounter\033[0m\n"<<counter<<"\n";
-     if (counter > 1)
-      break;
+     std::cout<<"counter: "<<counter<<"\n";
     }
   }
 }
