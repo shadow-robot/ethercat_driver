@@ -142,6 +142,7 @@ static const char* joint_names[JOINTS_NUM_0X20] = {
 
 // From
 // https://github.com/shadow-robot/sr-ros-interface-ethercat/blob/kinetic-devel/sr_edc_launch/mappings/default_mappings/rh_E_v3.yaml
+
 static int motor_ids[JOINTS_NUM_0X20] = {0,  -1, -1, 1,  2,  3,  -1, -1, 11, 13,
                                          15, -1, -1, 16, 17, 12, -1, -1, 10, 14,
                                          4,  6,  5,  7,  9,  19, 18, 8};
