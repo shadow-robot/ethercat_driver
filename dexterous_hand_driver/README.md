@@ -15,6 +15,6 @@ To run the driver
 
 ```
 sudo -s
-export LD_LIBRARY_PATH=${HOME}/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/home/user/lib:$LD_LIBRARY_PATH
 dexterous_hand_driver_0220
 ```

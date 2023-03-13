@@ -517,7 +517,6 @@ void HandDriver0220::sendReset(
     } else {
       to_send.byte[0] = motor_id;
     }
-
     command->motor_data[motor_id] = to_send.word;
   }
 }
@@ -639,8 +638,8 @@ void HandDriver0220::convertCommand(
   if (high_level_command->use_pwm) {
     command->to_motor_data_type = MOTOR_DEMAND_PWM;
     for (auto &joint : joints_vector_) {
-      command->motor_data[joint.motor_id_] = convertFromPositionToPwmCommand(
-          joint, high_level_command->pwm_command[joint.motor_id_], period);
+      command->motor_data[joint.motor_id_] = high_level_command->pwm_command[joint.motor_id_]; //convertFromPositionToPwmCommand(
+          //joint, high_level_command->pwm_command[joint.motor_id_], period);
       SHADOWHAND_DEBUG("Setting pwm[%d] to %d\n", joint.motor_id_,
                        command->motor_data[joint.motor_id_]);
     }
@@ -813,14 +812,35 @@ void HandDriver0220::convertTactileData(
   }
 }
 
+void HandDriver0220::convertStrainGaugesData(
+    ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data,
+    Hand0220State *high_level_state)
+{
+  // fill up high level state with even motors
+  if (state_data->which_motors == 0)
+  {
+    // even motors
+    for (int i = 0; i < 10; ++i) 
+    {
+      high_level_state->strain_gauges_data[i*2] = state_data->motor_data_packet[i].torque;
+    }
+  }
+  else if (state_data->which_motors == 1)   // fill with odd motors
+  {
+    for (int i = 0; i < 10; ++i)
+    {
+      int index = i + (i+1);
+      high_level_state->strain_gauges_data[index] = state_data->motor_data_packet[i].torque;
+    }
+  }
+}
+
 bool HandDriver0220::convertState(
     ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data) {
   Hand0220State *high_level_state = getStateStruct();
-  struct timeval cur_time;
-  gettimeofday(&cur_time, NULL);
-  high_level_state->timestamp = static_cast<double>(cur_time.tv_sec) +
-                                static_cast<double>(cur_time.tv_usec) * 1.0e-6;
-
+  struct timeval time_now{};
+  gettimeofday(&time_now, nullptr);
+  high_level_state->timestamp_ms =  (time_now.tv_sec * 1000) + (time_now.tv_usec / 1000);
   SHADOWHAND_DEBUG("EDC_command = %d\n", state_data->EDC_command);
   for (int i = 0; i < HAND_DRIVER_0220_NB_RAW_SENSORS; ++i) {
     SHADOWHAND_DEBUG("sensor %s: sensors[%d] = %d\n", sensor_names[i], i,
@@ -842,13 +862,13 @@ bool HandDriver0220::convertState(
     auto mutable_joint = &joints_vector_[i];
     // TODO(sherrym): Need to verify that having pos_filter is indeed better.
     pair<double, double> pos_and_velocity = mutable_joint->pos_filter_.compute(
-        calibrated_position, high_level_state->timestamp);
+      calibrated_position, high_level_state->timestamp_s);
     mutable_joint->joint_state_.position_ = pos_and_velocity.first;
     mutable_joint->joint_state_.velocity_ = pos_and_velocity.second;
   }
 
   // Converts tactile data to high_level_state->biotac_data.
-  convertTactileData(state_data, high_level_state);
+  //convertTactileData(state_data, high_level_state);
 
   SHADOWHAND_DEBUG("motor_data_type = %d\n", state_data->motor_data_type);
   SHADOWHAND_DEBUG("which_motors = %d\n", state_data->which_motors);
@@ -856,12 +876,13 @@ bool HandDriver0220::convertState(
                    state_data->which_motor_data_arrived);
   SHADOWHAND_DEBUG("which_motor_data_had_errors = %d\n",
                    state_data->which_motor_data_had_errors);
-  for (int i = 0; i < 10; ++i) {
-    SHADOWHAND_DEBUG("motor_data_packet[%d].torque = %d\n", i,
-                     state_data->motor_data_packet[i].torque);
-    SHADOWHAND_DEBUG("motor_data_packet[%d].misc = %d\n", i,
-                     state_data->motor_data_packet[i].misc);
-  }
+  // for (int i = 0; i < 10; ++i) 
+  // {
+  //   SHADOWHAND_DEBUG("motor_data_packet[%d].torque = %d\n", i, state_data->motor_data_packet[i].torque);
+  //   SHADOWHAND_DEBUG("motor_data_packet[%d].misc = %d\n", i, state_data->motor_data_packet[i].misc);
+  // }
+
+  convertStrainGaugesData(state_data, high_level_state);
 
   return true;
 }

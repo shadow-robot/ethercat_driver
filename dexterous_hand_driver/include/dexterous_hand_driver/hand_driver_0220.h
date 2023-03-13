@@ -64,6 +64,7 @@ limitations under the License.
 
 #define HAND_DRIVER_0220_NB_JOINTS 24
 #define HAND_DRIVER_0220_NB_RAW_SENSORS 37
+#define HAND_DRIVER_0220_IMU_FIELDS 11
 #define HAND_DRIVER_0220_NB_MOTORS 20
 #define HAND_DRIVER_0220_NB_BIOTAC_ELECTRODES 24
 #define HAND_DRIVER_0220_NB_FINGERS 5
@@ -95,7 +96,7 @@ struct BiotacData {
 struct Hand0220Command {
   bool use_pwm;
   std::array<double, HAND_DRIVER_0220_NB_MOTORS> pwm_command = {
-      {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
+      {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}};
   std::array<int, HAND_DRIVER_0220_NB_MOTORS> torque_command = {
       {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}};
 };
@@ -104,7 +105,9 @@ struct Hand0220State {
   std::array<int, HAND_DRIVER_0220_NB_RAW_SENSORS> raw_position;
   std::array<double, HAND_DRIVER_0220_NB_ALL_JOINTS> calibrated_position;
   std::array<BiotacData, HAND_DRIVER_0220_NB_FINGERS> biotac_data;
-  double timestamp;  // In seconds.
+  std::array<int, HAND_DRIVER_0220_NB_MOTORS> strain_gauges_data;
+  time_t timestamp_s;
+  long timestamp_ms;
 };
 
 class PositionPID {
@@ -548,7 +551,9 @@ class HandDriver0220 : public EthercatDevice {
   void convertTactileData(
       ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data,
       Hand0220State *high_level_state);
-
+  void convertStrainGaugesData(
+      ETHERCAT_DATA_STRUCTURE_0200_PALM_EDC_STATUS *state_data,
+      Hand0220State *high_level_state);
   // Command and state data pointers.
   int command_base_;
   int status_base_;

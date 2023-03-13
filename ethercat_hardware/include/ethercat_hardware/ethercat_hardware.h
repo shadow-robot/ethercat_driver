@@ -57,6 +57,8 @@
 
 #include <boost/regex.hpp>
 
+#include <iostream>
+
 using namespace boost::accumulators;
 
 struct EthercatHardwareDiagnostics {
