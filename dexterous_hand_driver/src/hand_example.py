@@ -85,7 +85,7 @@ def main():
   robot = hand_interface.ShadowHandRobot()
 
   print("Initializing hand")
-  robot.hand_init(initial_positions=initial_positions)
+  robot.hand_init(initial_positions=initial_positions, port="enp4s0")
 
   ordered_joint_names = robot.get_ordered_joint_names()
   print("Ordered joint names", ordered_joint_names)
