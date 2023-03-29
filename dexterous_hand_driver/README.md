@@ -40,3 +40,7 @@ In the python interface this is still not exposed, so in that case you will have
 * Make sure that the correct motor mapping for your type of hand is hardcoded in common_edc_ethercat_protocol.h. You can check which one by looking in the general_info.yaml for you hand. See the URL for the right hand template here https://github.com/shadow-robot/sr_hand_config/blob/master/sr_hand_config/Template_ER/general_info.yaml#L26. You will need to check the URL for you hand based on its serial number.
 
 * Joint calibration. Make sure that you hardcode the correct calibration values for your hand in the file `calibration.h`. You can read these values from your hand config on github. See the URL for the right hand template here https://github.com/shadow-robot/sr_hand_config/blob/master/sr_hand_config/Template_ER/calibrations/calibration.yaml. You will need to check the URL for you hand based on its serial number.
+
+## What is not supported in this version
+* Hands with product ID 0240 (with an IMU)
+* Combined calibration of two joints (instead, two sets of single joint calibrations will have to be extracted from the provided combined calibration)
