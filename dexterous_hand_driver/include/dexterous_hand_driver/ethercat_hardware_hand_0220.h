@@ -31,45 +31,83 @@
  *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  *  POSSIBILITY OF SUCH DAMAGE.
  *********************************************************************/
+/* Copyright 2018 Google LLC. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
 
 #ifndef ETHERCAT_HARDWARE_HAND_0220_H
 #define ETHERCAT_HARDWARE_HAND_0220_H
 
 #include <ethercat_hardware/ethercat_hardware.h>
-#include "dexterous_hand_driver/hand_driver_0220.h"
 #include "dexterous_hand_driver/ethercat_bridge_driver.h"
+#include "dexterous_hand_driver/hand_driver_0220.h"
 
-namespace dexterous_hand_driver
-{
+namespace dexterous_hand_driver {
 
-struct EthercatHand0220Command
-{
+struct EthercatHand0220Command {
   Hand0220Command* hand_1;
-  // More members would have to be declared here if more ethercat slaves are present in the bus (bridge doesn't have data so it is not here)
-  // e.g. if a second dexterous hand is connected to the same etherCAT bus we would need to declare a hand_2 field
+  // More members would have to be declared here if more ethercat slaves are
+  // present in the bus (bridge doesn't have data so it is not here) e.g. if a
+  // second dexterous hand is connected to the same etherCAT bus we would need
+  // to declare a hand_2 field
 };
 
-struct EthercatHand0220State
-{
+struct EthercatHand0220State {
   Hand0220State* hand_1;
-  // More members would have to be declared here if more ethercat slaves are present in the bus (bridge doesn't have data so it is not here)
-  // e.g. if a second dexterous hand is connected to the same etherCAT bus we would need to declare a hand_2 field
+  // More members would have to be declared here if more ethercat slaves are
+  // present in the bus (bridge doesn't have data so it is not here) e.g. if a
+  // second dexterous hand is connected to the same etherCAT bus we would need
+  // to declare a hand_2 field
 };
 
-class EthercatHardwareHand0220 : public EthercatHardware
-{
-public:
-  EthercatHardwareHand0220();
+class EthercatHardwareHand0220 : public EthercatHardware {
+ public:
+  EthercatHardwareHand0220(const string& interface = "enx00e04c68c394");
   virtual ~EthercatHardwareHand0220();
-  bool initializeHand0220();
+
+  // Initializes the hand. This will perform etherCAT initialization of all the
+  // slaves and their hand parameters.
+  bool initializeHand0220(
+      const string& yaml_filename = "motor_board_effort_controllers.yaml",
+      const string& position_controller_yaml_filename =
+          "sr_edc_joint_position_controllers_PWM.yaml");
+
+  // Sends commands and receives statuses from the hand.
   bool sendAndReceiveFromHand0220();
-  void setCommandForHand0220(unsigned char *command_buffer /* this will be a struct */);
-  void getStatusFromHand0220(unsigned char *status_buffer /* this will be a struct */);
+
+  void setCommandForHand0220(
+      unsigned char* command_buffer /* this will be a struct */);
+
+  void getStatusFromHand0220(
+      unsigned char* status_buffer /* this will be a struct */);
+
+  // Returns pointer to EthercatHand0220Command structure.
   EthercatHand0220Command* getCommandStruct();
+
+  // Returns pointer to EthercatHand0220State structure.
   EthercatHand0220State* getStateStruct();
 
-private:
-  virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
+  std::array<int, HAND_DRIVER_0220_NB_MOTORS>* getCalibratedIds();
+
+  const std::map<string, int>& getJointToCalibratedIdMap();
+  const std::map<int, string>& getCalibratedIdToJointMap();
+  const std::map<string, int>& getJointsToMotorsMap();
+  const std::map<int, string>& getMotorsToJointsMap();
+
+ private:
+  virtual boost::shared_ptr<EthercatDevice> configSlave(
+      EtherCAT_SlaveHandler* sh);
   boost::shared_ptr<EthercatDevice> findHand();
 
   boost::shared_ptr<HandDriver0220> hand_driver_;
@@ -77,5 +115,6 @@ private:
   EthercatHand0220Command command_;
   EthercatHand0220State state_;
 };
-}
+}  // namespace dexterous_hand_driver
+
 #endif  // ETHERCAT_HARDWARE_HAND_0220_H

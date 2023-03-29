@@ -43,36 +43,30 @@
 
 #ifndef ETHERCAT_CAN_BRIDGE_PROTOCOL_H_INCLUDED
 #define ETHERCAT_CAN_BRIDGE_PROTOCOL_H_INCLUDED
- 
+
 #include "../types_for_external.h"
 
 //! This packet allows the palm to transmit and receive CAN messages
 //! on either CAN bus. One CAN message per EtherCAT packet only.
 //! The CAN messages can be used for bootloading new code onto the motors,
 //! or to configure the motor boards.
-typedef struct
-{
-    int8u   can_bus;
-    int8u   message_length;
-    int16u  message_id;
-    int8u   message_data[8];
+typedef struct {
+  int8u can_bus;
+  int8u message_length;
+  int16u message_id;
+  int8u message_data[8];
 } __attribute__((packed)) ETHERCAT_CAN_BRIDGE_DATA;
 
-#define ETHERCAT_CAN_BRIDGE_DATA_SIZE   sizeof(ETHERCAT_CAN_BRIDGE_DATA)
+#define ETHERCAT_CAN_BRIDGE_DATA_SIZE sizeof(ETHERCAT_CAN_BRIDGE_DATA)
 
-
-//! | ETHERCAT_COMMAND_DATA | ETHERCAT_CAN_BRIDGE_DATA_COMMAND | ETHERCAT_STATUS_DATA | ETHERCAT_CAN_BRIDGE_DATA_STATUS |
-//! |                       |                                  |                      |
-//! |                       |                                  |                      ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS
-//! |                       |                                  |
-//! |                       |                                  ETHERCAT_STATUS_DATA_ADDRESS
-//! |                       |
-//! |                       ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS
+//! | ETHERCAT_COMMAND_DATA | ETHERCAT_CAN_BRIDGE_DATA_COMMAND |
+//! ETHERCAT_STATUS_DATA | ETHERCAT_CAN_BRIDGE_DATA_STATUS | | | | | | | |
+//! ETHERCAT_CAN_BRIDGE_DATA_STATUS_ADDRESS |                       | | | |
+//! ETHERCAT_STATUS_DATA_ADDRESS |                       | |
+//! ETHERCAT_CAN_BRIDGE_DATA_COMMAND_ADDRESS
 //! |
 //! ETHERCAT_COMMAND_DATA_ADDRESS
 //!
 //!
-
-
 
 #endif

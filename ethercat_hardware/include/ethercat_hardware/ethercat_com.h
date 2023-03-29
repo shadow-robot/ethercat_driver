@@ -36,50 +36,42 @@
 #define ETHERCAT_COM_H
 
 #include <eml/ethercat_AL.h>
+#include <eml/ethercat_dll.h>
 #include <eml/ethercat_master.h>
 #include <eml/ethercat_slave_handler.h>
-#include <eml/ethercat_dll.h>
 #include <pthread.h>
 
-class EthercatCom
-{
-protected:
-  EthercatCom()
-  {
-  }
+class EthercatCom {
+ protected:
+  EthercatCom() {}
 
-public:
-  virtual bool txandrx(struct EtherCAT_Frame * frame) = 0;
-  virtual bool txandrx_once(struct EtherCAT_Frame * frame) = 0;
-  virtual ~EthercatCom()
-  {
-  }
+ public:
+  virtual bool txandrx(struct EtherCAT_Frame *frame) = 0;
+  virtual bool txandrx_once(struct EtherCAT_Frame *frame) = 0;
+  virtual ~EthercatCom() {}
 };
 
-class EthercatDirectCom : public EthercatCom
-{
-public:
-  EthercatDirectCom(EtherCAT_DataLinkLayer *dll) : dll_(dll)
-  {
-  }
+class EthercatDirectCom : public EthercatCom {
+ public:
+  EthercatDirectCom(EtherCAT_DataLinkLayer *dll) : dll_(dll) {}
 
-  bool txandrx(struct EtherCAT_Frame * frame);
-  bool txandrx_once(struct EtherCAT_Frame * frame);
+  bool txandrx(struct EtherCAT_Frame *frame);
+  bool txandrx_once(struct EtherCAT_Frame *frame);
 
-protected:
+ protected:
   EtherCAT_DataLinkLayer *dll_;
 };
 
-class EthercatOobCom : public EthercatCom
-{
-public:
+class EthercatOobCom : public EthercatCom {
+ public:
   EthercatOobCom(struct netif *ni);
 
-  bool txandrx(struct EtherCAT_Frame * frame);
-  bool txandrx_once(struct EtherCAT_Frame * frame);
+  bool txandrx(struct EtherCAT_Frame *frame);
+  bool txandrx_once(struct EtherCAT_Frame *frame);
 
   void tx();
-protected:
+
+ protected:
   bool lock(unsigned line);
   bool trylock(unsigned line);
   bool unlock(unsigned line);
@@ -89,10 +81,7 @@ protected:
   pthread_cond_t share_cond_;
   pthread_cond_t busy_cond_;
 
-  enum
-  {
-    IDLE = 0, READY_TO_SEND = 1, WAITING_TO_RECV = 2
-  } state_;
+  enum { IDLE = 0, READY_TO_SEND = 1, WAITING_TO_RECV = 2 } state_;
   EtherCAT_Frame *frame_;
   int handle_;
   unsigned line_;

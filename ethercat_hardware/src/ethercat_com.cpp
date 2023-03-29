@@ -33,69 +33,59 @@
  *********************************************************************/
 
 #include "ethercat_hardware/ethercat_com.h"
-#include <stdio.h>
-#include <errno.h>
 #include <assert.h>
+#include <errno.h>
+#include <stdio.h>
 
-bool EthercatDirectCom::txandrx_once(struct EtherCAT_Frame * frame)
-{
+bool EthercatDirectCom::txandrx_once(struct EtherCAT_Frame *frame) {
   assert(frame != NULL);
   int handle = dll_->tx(frame);
-  if (handle < 0)
-    return false;
+  if (handle < 0) return false;
   return dll_->rx(frame, handle);
 }
 
-bool EthercatDirectCom::txandrx(struct EtherCAT_Frame * frame)
-{
+bool EthercatDirectCom::txandrx(struct EtherCAT_Frame *frame) {
   return dll_->txandrx(frame);
 }
 
-EthercatOobCom::EthercatOobCom(struct netif *ni) :
-  ni_(ni),
-  state_(IDLE),
-  frame_(NULL),
-  handle_(-1),
-  line_(0)
-{
+EthercatOobCom::EthercatOobCom(struct netif *ni)
+    : ni_(ni), state_(IDLE), frame_(NULL), handle_(-1), line_(0) {
   assert(ni_ != NULL);
 
   pthread_mutexattr_t mutex_attr;
   int error = pthread_mutexattr_init(&mutex_attr);
-  if (error != 0)
-  {
-    fprintf(stderr, "%s : Initializing mutex attr failed : %d\n", __func__, error);
+  if (error != 0) {
+    fprintf(stderr, "%s : Initializing mutex attr failed : %d\n", __func__,
+            error);
     return;
   }
   error = pthread_mutexattr_settype(&mutex_attr, PTHREAD_MUTEX_ERRORCHECK_NP);
-  if (error != 0)
-  {
-    fprintf(stderr, "%s : Setting type of mutex attr failed : %d\n", __func__, error);
+  if (error != 0) {
+    fprintf(stderr, "%s : Setting type of mutex attr failed : %d\n", __func__,
+            error);
     return;
   }
   error = pthread_mutex_init(&mutex_, &mutex_attr);
-  if (error != 0)
-  {
+  if (error != 0) {
     fprintf(stderr, "%s : Initializing mutex failed : %d\n", __func__, error);
     return;
   }
   error = pthread_cond_init(&share_cond_, NULL);
-  if (error != 0)
-  {
-    fprintf(stderr, "%s : Initializing share condition failed : %d\n", __func__, error);
+  if (error != 0) {
+    fprintf(stderr, "%s : Initializing share condition failed : %d\n", __func__,
+            error);
     return;
   }
   error = pthread_cond_init(&busy_cond_, NULL);
   if (error != 0)
-    fprintf(stderr, "%s : Initializing busy condition failed : %d\n", __func__, error);
+    fprintf(stderr, "%s : Initializing busy condition failed : %d\n", __func__,
+            error);
   return;
 }
 
-bool EthercatOobCom::lock(unsigned line)
-{
+bool EthercatOobCom::lock(unsigned line) {
   int error;
-  if (0 != (error = pthread_mutex_lock(&mutex_)))
-  {
+  if (0 != (error = pthread_mutex_lock(&mutex_))) {
     fprintf(stderr, "%s : lock %d at %d\n", __func__, error, line);
     return false;
   }
@@ -103,11 +93,9 @@ bool EthercatOobCom::lock(unsigned line)
   return true;
 }
 
-bool EthercatOobCom::trylock(unsigned line)
-{
+bool EthercatOobCom::trylock(unsigned line) {
   int error;
-  if (0 != (error = pthread_mutex_trylock(&mutex_)))
-  {
+  if (0 != (error = pthread_mutex_trylock(&mutex_))) {
     if (error != EBUSY)
       fprintf(stderr, "%s : lock %d at %d\n", __func__, error, line);
     return false;
@@ -116,11 +104,9 @@ bool EthercatOobCom::trylock(unsigned line)
   return true;
 }
 
-bool EthercatOobCom::unlock(unsigned line)
-{
+bool EthercatOobCom::unlock(unsigned line) {
   int error;
-  if (0 != (error = pthread_mutex_unlock(&mutex_)))
-  {
+  if (0 != (error = pthread_mutex_unlock(&mutex_))) {
     fprintf(stderr, "%s : unlock %d at %d\n", __func__, error, line);
     return false;
   }
@@ -131,32 +117,26 @@ bool EthercatOobCom::unlock(unsigned line)
 // OOB replacement for netif->txandrx()
 // Returns true for success, false for dropped packet
 
-bool EthercatOobCom::txandrx_once(struct EtherCAT_Frame * frame)
-{
+bool EthercatOobCom::txandrx_once(struct EtherCAT_Frame *frame) {
   assert(frame != NULL);
 
-  if (!lock(__LINE__))
-    return false;
+  if (!lock(__LINE__)) return false;
 
   // Wait for an opening to send frame
-  while (state_ != IDLE)
-  {
+  while (state_ != IDLE) {
     pthread_cond_wait(&share_cond_, &mutex_);
   }
   frame_ = frame;
   state_ = READY_TO_SEND;
 
   // RT control loop will send frame
-  do
-  {
+  do {
     pthread_cond_wait(&busy_cond_, &mutex_);
-  }
-  while (state_ != WAITING_TO_RECV);
+  } while (state_ != WAITING_TO_RECV);
 
   // Packet has been sent, wait for recv
   bool success = false;
-  if (handle_ >= 0)
-    success = ni_->rx(frame_, ni_, handle_);
+  if (handle_ >= 0) success = ni_->rx(frame_, ni_, handle_);
   handle_ = -1;
 
   // Allow other threads to send data
@@ -169,26 +149,20 @@ bool EthercatOobCom::txandrx_once(struct EtherCAT_Frame * frame)
   return success;
 }
 
-bool EthercatOobCom::txandrx(struct EtherCAT_Frame * frame)
-{
+bool EthercatOobCom::txandrx(struct EtherCAT_Frame *frame) {
   static const unsigned MAX_TRIES = 10;
-  for (unsigned tries = 0; tries < MAX_TRIES; ++tries)
-  {
-    if (this->txandrx_once(frame))
-      return true;
+  for (unsigned tries = 0; tries < MAX_TRIES; ++tries) {
+    if (this->txandrx_once(frame)) return true;
   }
   return false;
 }
 
 // Called by RT control loop to send oob data
 
-void EthercatOobCom::tx()
-{
-  if (!trylock(__LINE__))
-    return;
+void EthercatOobCom::tx() {
+  if (!trylock(__LINE__)) return;
 
-  if (state_ == READY_TO_SEND)
-  {
+  if (state_ == READY_TO_SEND) {
     // Packet is in need of being sent
     assert(frame_ != NULL);
     handle_ = ni_->tx(frame_, ni_);

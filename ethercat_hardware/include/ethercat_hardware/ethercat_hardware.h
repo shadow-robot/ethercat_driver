@@ -37,36 +37,41 @@
 #define ETHERCAT_HARDWARE_H
 
 #include <eml/ethercat_AL.h>
+#include <eml/ethercat_device_addressed_telegram.h>
+#include <eml/ethercat_dll.h>
 #include <eml/ethercat_master.h>
 #include <eml/ethercat_slave_handler.h>
-#include <eml/ethercat_dll.h>
-#include <eml/ethercat_device_addressed_telegram.h>
 
-#include "ethercat_hardware/ethercat_device.h"
 #include "ethercat_hardware/ethercat_com.h"
+#include "ethercat_hardware/ethercat_device.h"
 #include "ethercat_hardware/ethernet_interface_info.h"
 
 #include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
 #include <boost/accumulators/statistics/max.hpp>
 #include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
 
-#include <boost/thread/thread.hpp>
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/thread.hpp>
 
 #include <boost/regex.hpp>
 
+#include <iostream>
+
 using namespace boost::accumulators;
 
-struct EthercatHardwareDiagnostics
-{
+struct EthercatHardwareDiagnostics {
   EthercatHardwareDiagnostics();
   void resetMaxTiming();
-  accumulator_set<double, stats<tag::max, tag::mean> > pack_command_acc_; //!< time taken by all devices packCommand functions
-  accumulator_set<double, stats<tag::max, tag::mean> > txandrx_acc_; //!< time taken by to transmit and recieve process data
-  accumulator_set<double, stats<tag::max, tag::mean> > unpack_state_acc_; //!< time taken by all devices updateState functions
-  accumulator_set<double, stats<tag::max, tag::mean> > publish_acc_; //!< time taken by any publishing step in main loop
+  accumulator_set<double, stats<tag::max, tag::mean> >
+      pack_command_acc_;  //!< time taken by all devices packCommand functions
+  accumulator_set<double, stats<tag::max, tag::mean> >
+      txandrx_acc_;  //!< time taken by to transmit and recieve process data
+  accumulator_set<double, stats<tag::max, tag::mean> >
+      unpack_state_acc_;  //!< time taken by all devices updateState functions
+  accumulator_set<double, stats<tag::max, tag::mean> >
+      publish_acc_;  //!< time taken by any publishing step in main loop
   double max_pack_command_;
   double max_txandrx_;
   double max_unpack_state_;
@@ -74,27 +79,28 @@ struct EthercatHardwareDiagnostics
   int txandrx_errors_;
   unsigned device_count_;
   bool pd_error_;
-  bool halt_after_reset_; //!< True if motor halt soon after motor reset
-  unsigned reset_motors_service_count_; //!< Number of times reset_motor service has been used
-  unsigned halt_motors_service_count_; //!< Number of time halt_motor service call is used
-  unsigned halt_motors_error_count_; //!< Number of transitions into halt state due to device error
+  bool halt_after_reset_;  //!< True if motor halt soon after motor reset
+  unsigned reset_motors_service_count_;  //!< Number of times reset_motor
+                                         //!< service has been used
+  unsigned halt_motors_service_count_;   //!< Number of time halt_motor service
+                                         //!< call is used
+  unsigned halt_motors_error_count_;  //!< Number of transitions into halt state
+                                      //!< due to device error
   struct netif_counters counters_;
   bool input_thread_is_stopped_;
-  bool motors_halted_; //!< True if motors are halted
-  const char* motors_halted_reason_; //!< reason that motors first halted
+  bool motors_halted_;                //!< True if motors are halted
+  const char *motors_halted_reason_;  //!< reason that motors first halted
 
   static const bool collect_extra_timing_ = true;
 };
 
-class EthercatHardware
-{
-public:
+class EthercatHardware {
+ public:
   /*!
-   * \brief Scans the network and gives a list of detected devices on a given ethercat port
-   * \param eth is the thernet port to be scanned
+   * \brief Scans the network and gives a list of detected devices on a given
+   * ethercat port \param eth is the thernet port to be scanned
    */
-  static std::vector<EtherCAT_SlaveHandler> scanPort(const std::string& eth);
-
+  static std::vector<EtherCAT_SlaveHandler> scanPort(const std::string &eth);
 
   /*!
    * \brief Constructor
@@ -107,7 +113,8 @@ public:
   virtual ~EthercatHardware();
 
   /*!
-   * \brief Send most recent motor commands and retrieve updates. This command must be run at a sufficient rate or else the motors will be disabled.
+   * \brief Send most recent motor commands and retrieve updates. This command
+   * must be run at a sufficient rate or else the motors will be disabled.
    * \returns A boolean indicating success of the transmission
    */
   bool update();
@@ -127,22 +134,25 @@ public:
   /*!
    * \brief Send process data
    */
-  bool txandrx_PD(unsigned buffer_size, unsigned char* buffer, unsigned tries);
+  bool txandrx_PD(unsigned buffer_size, unsigned char *buffer, unsigned tries);
 
-  const std::vector<boost::shared_ptr<const EthercatDevice> > getSlaves() const
-  {
-    return std::vector<boost::shared_ptr<const EthercatDevice> >(slaves_.begin(), slaves_.end());
+  const std::vector<boost::shared_ptr<const EthercatDevice> > getSlaves()
+      const {
+    return std::vector<boost::shared_ptr<const EthercatDevice> >(
+        slaves_.begin(), slaves_.end());
   }
 
-protected:
-  string interface_; //!< The socket interface that is connected to the EtherCAT devices (e.g., eth0)
+ protected:
+  string interface_;  //!< The socket interface that is connected to the
+                      //!< EtherCAT devices (e.g., eth0)
   int start_address_;
   std::vector<boost::shared_ptr<EthercatDevice> > slaves_;
 
-private:
+ private:
   static void changeState(EtherCAT_SlaveHandler *sh, EC_State new_state);
 
-  virtual boost::shared_ptr<EthercatDevice> configSlave(EtherCAT_SlaveHandler *sh);
+  virtual boost::shared_ptr<EthercatDevice> configSlave(
+      EtherCAT_SlaveHandler *sh);
   bool setRouterToSlaveHandlers();
 
   struct netif *ni_;
@@ -164,8 +174,10 @@ private:
   bool halt_motors_;
   unsigned int reset_state_;
 
-  unsigned timeout_; //!< Timeout (in microseconds) to used for sending/recieving packets once in realtime mode.
-  unsigned max_pd_retries_; //!< Max number of times to retry sending process data before halting motors
+  unsigned timeout_;  //!< Timeout (in microseconds) to used for
+                      //!< sending/recieving packets once in realtime mode.
+  unsigned max_pd_retries_;  //!< Max number of times to retry sending process
+                             //!< data before halting motors
 
   EthercatHardwareDiagnostics diagnostics_;
   struct timespec last_published_;
@@ -173,7 +185,10 @@ private:
 
   EthercatOobCom *oob_com_;
 
-  bool allow_unprogrammed_; //!< if the driver should treat the discovery of unprogrammed boards as a fatal error. Set to 'true' during board configuration, and set to 'false' otherwise.
+  bool allow_unprogrammed_;  //!< if the driver should treat the discovery of
+                             //!< unprogrammed boards as a fatal error. Set to
+                             //!< 'true' during board configuration, and set to
+                             //!< 'false' otherwise.
 };
 
 #endif /* ETHERCAT_HARDWARE_H */

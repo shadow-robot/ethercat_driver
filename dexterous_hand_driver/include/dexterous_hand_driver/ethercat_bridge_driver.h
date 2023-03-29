@@ -37,24 +37,22 @@
 
 #include <ethercat_hardware/ethercat_device.h>
 
-namespace dexterous_hand_driver
-{
-class EthercatBridgeDriver : public EthercatDevice
-{
-public:
+namespace dexterous_hand_driver {
+class EthercatBridgeDriver : public EthercatDevice {
+ public:
   EthercatBridgeDriver();
 
   virtual void construct(EtherCAT_SlaveHandler *sh, int &start_address);
 
   virtual void packCommand(unsigned char *buffer);
 
-  virtual bool unpackState(unsigned char *this_buffer, unsigned char *prev_buffer);
+  virtual bool unpackState(unsigned char *this_buffer,
+                           unsigned char *prev_buffer);
 
-private:
+ private:
   int command_base_;
   int status_base_;
   std::string serial_number_;
-  
 };
-}
+}  // namespace dexterous_hand_driver
 #endif  // ETHERCAT_BRIDGE_DRIVER_H
