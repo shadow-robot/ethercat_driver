@@ -316,12 +316,11 @@ class ShadowHandRobot():
     """
     start_time = time.time()
     while time.time() - start_time < duration:
-      self.send_and_receive_from_hand_0220()
-      time.sleep(0.001)
       if commands is not None:
         self.send_command(commands, use_position=use_position)
-        time.sleep(0.001)
+      self.send_and_receive_from_hand_0220()
       state = self.receive_state()
+      time.sleep(0.001)
     return state
 
   def send_mujoco_command(self, commands, use_position=True, in_radians=True):
